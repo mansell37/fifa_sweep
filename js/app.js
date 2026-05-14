@@ -348,19 +348,21 @@ function pickCell(teamName, tier) {
     const raw = teamRawPoints(teamName);
     const mult = TIER_MULTIPLIERS[tier];
     const scaled = raw * mult;
-    const koLabels = KO_ROUNDS.filter(rd => r[rd.key]).map(rd => rd.label);
+    const koRoundsWon = KO_ROUNDS.filter(rd => r[rd.key]);
+    const koLabels = koRoundsWon.map(rd => rd.label);
     if (r.thirdPlace) koLabels.push('3rd');
     const koChip = koLabels.length
-        ? `<span class="ko-chip" title="Knockout wins">${koLabels.join('·')}</span>`
+        ? `<span class="ko-chip" title="Knockout rounds won">${koLabels.join('·')}</span>`
         : '';
+    const totalW = (r.groupW || 0) + koRoundsWon.length;
     return `<td class="pick-cell">
         <div class="pick-row">
             <div class="pick-team-block">
                 <span class="pick-team">${escapeHtml(teamName)}</span>
                 ${koChip}
             </div>
-            <div class="wdl-inline" title="Group stage W/D/L">
-                <span class="wdl-chip wdl-w">W&nbsp;${r.groupW || 0}</span>
+            <div class="wdl-inline" title="Wins (incl. KO) / Draws / Losses">
+                <span class="wdl-chip wdl-w">W&nbsp;${totalW}</span>
                 <span class="wdl-chip wdl-d">D&nbsp;${r.groupD || 0}</span>
                 <span class="wdl-chip wdl-l">L&nbsp;${r.groupL || 0}</span>
             </div>
@@ -465,14 +467,16 @@ function renderDetail() {
             const tier = i + 1;
             const raw = teamRawPoints(team);
             const r = teamRecord(team);
-            const koWins = KO_ROUNDS.filter(rd => r[rd.key]).map(rd => rd.label).join(', ') || '—';
-            const groupRec = `${r.groupW || 0}W ${r.groupD || 0}D ${r.groupL || 0}L`;
+            const koRoundsWon = KO_ROUNDS.filter(rd => r[rd.key]);
+            const koLabels = koRoundsWon.map(rd => rd.label).join(', ') || '—';
+            const totalW = (r.groupW || 0) + koRoundsWon.length;
+            const wdlRec = `${totalW}W ${r.groupD || 0}D ${r.groupL || 0}L`;
             const scaled = raw * TIER_MULTIPLIERS[tier];
             return `<tr>
                 <td>Tier ${tier} (×${TIER_MULTIPLIERS[tier]})</td>
                 <td><strong>${escapeHtml(team || '—')}</strong></td>
-                <td>${groupRec}</td>
-                <td>${koWins}${r.thirdPlace ? ' + 3rd' : ''}</td>
+                <td>${wdlRec}</td>
+                <td>${koLabels}${r.thirdPlace ? ' + 3rd' : ''}</td>
                 <td>${raw}</td>
                 <td class="pick-total">${formatPts(scaled)}</td>
             </tr>`;
@@ -498,7 +502,7 @@ function renderDetail() {
             </div>
             <table class="detail-picks-table">
                 <thead>
-                    <tr><th>Tier</th><th>Team</th><th>Group</th><th>KO Wins</th><th>Raw</th><th style="text-align:right">Scaled</th></tr>
+                    <tr><th>Tier</th><th>Team</th><th>W-D-L</th><th>KO Rounds Won</th><th>Raw</th><th style="text-align:right">Scaled</th></tr>
                 </thead>
                 <tbody>${rows}</tbody>
             </table>
