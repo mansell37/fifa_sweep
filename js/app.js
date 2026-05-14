@@ -345,11 +345,28 @@ function renderLeaderboard() {
 
 function pickCell(teamName, tier) {
     if (!teamName) return `<td class="pick-cell"><span class="pick-team">—</span></td>`;
+    const r = teamRecord(teamName);
     const raw = teamRawPoints(teamName);
-    const scaled = raw * TIER_MULTIPLIERS[tier];
+    const mult = TIER_MULTIPLIERS[tier];
+    const scaled = raw * mult;
+    const koLabels = KO_ROUNDS.filter(rd => r[rd.key]).map(rd => rd.label);
+    if (r.thirdPlace) koLabels.push('3rd');
+    const koChip = koLabels.length
+        ? `<span class="ko-chip" title="Knockout wins">${koLabels.join(' · ')}</span>`
+        : '';
     return `<td class="pick-cell">
-        <div class="pick-team">${escapeHtml(teamName)}</div>
-        <div class="pick-pts">${raw} × ${TIER_MULTIPLIERS[tier]} = ${formatPts(scaled)}</div>
+        <div class="pick-team">${escapeHtml(teamName)} ${koChip}</div>
+        <div class="pick-body">
+            <div class="wdl-grid">
+                <span class="wdl-label">W</span><span class="wdl-val">${r.groupW || 0}</span>
+                <span class="wdl-label">D</span><span class="wdl-val">${r.groupD || 0}</span>
+                <span class="wdl-label">L</span><span class="wdl-val">${r.groupL || 0}</span>
+            </div>
+            <div class="pick-meta">
+                <div class="pick-raw">${raw} &times; ${mult}</div>
+            </div>
+            <div class="pick-scaled">${formatPts(scaled)}</div>
+        </div>
     </td>`;
 }
 

@@ -240,9 +240,56 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
 .sweep-table .pick-cell {
     font-size: 12px;
     line-height: 1.3;
+    min-width: 170px;
 }
-.sweep-table .pick-cell .pick-team { font-weight: 600; color: var(--gray-900); }
+.sweep-table .pick-cell .pick-team {
+    font-weight: 600;
+    color: var(--gray-900);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 4px;
+}
 .sweep-table .pick-cell .pick-pts { color: var(--gray-500); font-size: 11px; }
+.sweep-table .pick-cell .pick-body {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.sweep-table .pick-cell .wdl-grid {
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 6px;
+    row-gap: 1px;
+    font-size: 11px;
+    line-height: 1.15;
+    padding: 3px 6px;
+    background: var(--gray-50);
+    border-radius: 4px;
+    border: 1px solid var(--gray-200);
+}
+.sweep-table .pick-cell .wdl-label { color: var(--gray-500); font-weight: 700; }
+.sweep-table .pick-cell .wdl-val { font-weight: 700; color: var(--gray-900); text-align: right; }
+.sweep-table .pick-cell .pick-meta { display: flex; flex-direction: column; }
+.sweep-table .pick-cell .pick-raw { font-size: 11px; color: var(--gray-500); }
+.sweep-table .pick-cell .pick-scaled {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--wc-crimson-deep);
+    margin-left: auto;
+    line-height: 1;
+}
+.sweep-table .pick-cell .ko-chip {
+    display: inline-block;
+    background: var(--wc-pitch);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    letter-spacing: 0.2px;
+}
 .sweep-table .bonus-cell { text-align: center; font-weight: 600; color: var(--wc-pitch); }
 
 .empty-cell { padding: 24px; text-align: center; color: var(--gray-500); font-style: italic; }
