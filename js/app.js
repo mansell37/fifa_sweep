@@ -332,8 +332,7 @@ function renderLeaderboard() {
             <tr>
                 <td class="rank ${rankClass}">${idx + 1}</td>
                 <td>
-                    <div class="team-name">${escapeHtml(en.team)}</div>
-                    <div class="entrant-name">${escapeHtml(en.entrant)}</div>
+                    <div class="team-line"><span class="team-name">${escapeHtml(en.team)}</span><span class="team-sep">·</span><span class="entrant-name">${escapeHtml(en.entrant)}</span></div>
                 </td>
                 ${[0, 1, 2, 3].map(i => pickCell(en.picks[i], i + 1)).join('')}
                 <td class="bonus-cell">${bonusPointsFor(en)}</td>
@@ -352,20 +351,20 @@ function pickCell(teamName, tier) {
     const koLabels = KO_ROUNDS.filter(rd => r[rd.key]).map(rd => rd.label);
     if (r.thirdPlace) koLabels.push('3rd');
     const koChip = koLabels.length
-        ? `<span class="ko-chip" title="Knockout wins">${koLabels.join(' · ')}</span>`
+        ? `<span class="ko-chip" title="Knockout wins">${koLabels.join('·')}</span>`
         : '';
     return `<td class="pick-cell">
-        <div class="pick-team">${escapeHtml(teamName)} ${koChip}</div>
-        <div class="pick-body">
-            <div class="wdl-grid">
-                <span class="wdl-label">W</span><span class="wdl-val">${r.groupW || 0}</span>
-                <span class="wdl-label">D</span><span class="wdl-val">${r.groupD || 0}</span>
-                <span class="wdl-label">L</span><span class="wdl-val">${r.groupL || 0}</span>
+        <div class="pick-row">
+            <div class="pick-team-block">
+                <span class="pick-team">${escapeHtml(teamName)}</span>
+                ${koChip}
             </div>
-            <div class="pick-meta">
-                <div class="pick-raw">${raw} &times; ${mult}</div>
+            <div class="wdl-inline" title="Group stage W/D/L">
+                <span class="wdl-chip wdl-w">W&nbsp;${r.groupW || 0}</span>
+                <span class="wdl-chip wdl-d">D&nbsp;${r.groupD || 0}</span>
+                <span class="wdl-chip wdl-l">L&nbsp;${r.groupL || 0}</span>
             </div>
-            <div class="pick-scaled">${formatPts(scaled)}</div>
+            <div class="pick-scaled" title="${raw} &times; ${mult}">${formatPts(scaled)}</div>
         </div>
     </td>`;
 }

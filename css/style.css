@@ -204,8 +204,8 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
     background: linear-gradient(135deg, var(--wc-navy-deep), var(--wc-navy));
     color: white;
     text-align: left;
-    padding: 10px 12px;
-    font-size: 12px;
+    padding: 7px 10px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.3px;
     text-transform: uppercase;
@@ -214,9 +214,10 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
     border-bottom: 2px solid var(--wc-gold);
 }
 .sweep-table tbody td {
-    padding: 10px 12px;
+    padding: 4px 10px;
     border-bottom: 1px solid var(--gray-100);
     color: var(--gray-800);
+    vertical-align: middle;
 }
 .sweep-table tbody tr:hover { background: var(--wc-cream); }
 .sweep-table tbody tr:nth-child(even) { background: var(--gray-50); }
@@ -235,60 +236,91 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
     text-align: right;
     font-size: 14px;
 }
-.sweep-table .team-name { font-weight: 600; color: var(--wc-navy-deep); }
-.sweep-table .entrant-name { color: var(--gray-600); font-size: 12px; }
+.sweep-table .team-line {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 340px;
+    line-height: 1.2;
+}
+.sweep-table .team-sep { color: var(--gray-300); font-size: 11px; flex-shrink: 0; }
+.sweep-table .team-name {
+    font-weight: 700;
+    color: var(--wc-navy-deep);
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+    min-width: 0;
+}
+.sweep-table .entrant-name {
+    color: var(--gray-500);
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+    min-width: 0;
+}
 .sweep-table .pick-cell {
     font-size: 12px;
-    line-height: 1.3;
-    min-width: 170px;
+    line-height: 1.15;
+    min-width: 150px;
+}
+.sweep-table .pick-cell .pick-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.sweep-table .pick-cell .pick-team-block {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
 }
 .sweep-table .pick-cell .pick-team {
     font-weight: 600;
     color: var(--gray-900);
+}
+.sweep-table .pick-cell .wdl-inline {
     display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-bottom: 4px;
+    gap: 3px;
+    flex-shrink: 0;
 }
-.sweep-table .pick-cell .pick-pts { color: var(--gray-500); font-size: 11px; }
-.sweep-table .pick-cell .pick-body {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.sweep-table .pick-cell .wdl-chip {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    line-height: 1.4;
+    letter-spacing: 0.2px;
 }
-.sweep-table .pick-cell .wdl-grid {
-    display: grid;
-    grid-template-columns: auto auto;
-    column-gap: 6px;
-    row-gap: 1px;
-    font-size: 11px;
-    line-height: 1.15;
-    padding: 3px 6px;
-    background: var(--gray-50);
-    border-radius: 4px;
-    border: 1px solid var(--gray-200);
-}
-.sweep-table .pick-cell .wdl-label { color: var(--gray-500); font-weight: 700; }
-.sweep-table .pick-cell .wdl-val { font-weight: 700; color: var(--gray-900); text-align: right; }
-.sweep-table .pick-cell .pick-meta { display: flex; flex-direction: column; }
-.sweep-table .pick-cell .pick-raw { font-size: 11px; color: var(--gray-500); }
+.sweep-table .pick-cell .wdl-w { background: #dcfce7; color: #166534; }
+.sweep-table .pick-cell .wdl-d { background: #fef3c7; color: #92400e; }
+.sweep-table .pick-cell .wdl-l { background: #fee2e2; color: #991b1b; }
 .sweep-table .pick-cell .pick-scaled {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 800;
     color: var(--wc-crimson-deep);
     margin-left: auto;
     line-height: 1;
+    min-width: 28px;
+    text-align: right;
+    flex-shrink: 0;
 }
 .sweep-table .pick-cell .ko-chip {
     display: inline-block;
     background: var(--wc-pitch);
     color: white;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
-    padding: 1px 6px;
+    padding: 1px 5px;
     border-radius: 999px;
     letter-spacing: 0.2px;
+    line-height: 1.2;
 }
 .sweep-table .bonus-cell { text-align: center; font-weight: 600; color: var(--wc-pitch); }
 
