@@ -309,10 +309,10 @@ function renderLeaderboard() {
         <tr>
             <th class="rank">#</th>
             <th>Team / Entrant</th>
-            <th>T1 (×1)</th>
-            <th>T2 (×1.5)</th>
-            <th>T3 (×2)</th>
-            <th>T4 (×4)</th>
+            <th>Team 1: (×1)</th>
+            <th>Team 2: (×1.5)</th>
+            <th>Team 3: (×2)</th>
+            <th>Team 4: (×4)</th>
             <th class="bonus-cell">Bonus</th>
             <th style="text-align:right">Total</th>
         </tr>
@@ -564,6 +564,7 @@ function setupAdmin() {
             adminMode = false;
             document.body.classList.remove('admin-active');
             document.getElementById('adminToggle').classList.remove('active');
+            if (activeTab === 'enter') activateTab('sweep');
             renderEntriesList();
         } else {
             document.getElementById('adminPwModal').classList.add('active');
