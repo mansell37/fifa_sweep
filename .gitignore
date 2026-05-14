@@ -1,0 +1,6 @@
+node_modules/
+server.log
+.DS_Store
+*.swp
+.env
+.env.local

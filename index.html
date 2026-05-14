@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Cup 2026 Sweepstake</title>
+    <link rel="stylesheet" href="css/style.css?v=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <div class="logo">
+                <span class="logo-icon">&#9917;</span>
+                <span class="logo-text">World Cup 2026 Sweepstake</span>
+            </div>
+            <nav class="nav-tabs" id="navTabs">
+                <button class="tab-btn active" data-tab="sweep">Leaderboard</button>
+                <button class="tab-btn" data-tab="enter">Enter Team</button>
+                <button class="tab-btn" data-tab="tiers">Tiers</button>
+                <button class="tab-btn" data-tab="rules">Rules &amp; Prizes</button>
+                <button class="tab-btn" data-tab="detail">Selections</button>
+                <button class="tab-btn" data-tab="analytics">Analytics</button>
+            </nav>
+            <div class="header-actions">
+                <button id="adminToggle" class="btn btn-admin" title="Toggle admin mode">Admin</button>
+                <button id="refreshBtn" class="btn btn-refresh" title="Refresh data">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 1 1 .908-.418A6 6 0 1 1 8 2v1z"/>
+                        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- ============ LEADERBOARD TAB ============ -->
+        <section id="tab-sweep" class="tab-content active">
+            <div class="sweep-header">
+                <h2 id="sweepTitle">Sweepstake Leaderboard</h2>
+                <div class="sweep-meta">
+                    <span id="sweepEntryCount">0 entries</span>
+                    <span class="sep">|</span>
+                    <span>Last updated: <strong id="lastUpdated">--</strong></span>
+                </div>
+            </div>
+            <div class="sweep-table-wrapper">
+                <table class="sweep-table" id="sweepTable">
+                    <thead id="sweepHead"></thead>
+                    <tbody id="sweepBody">
+                        <tr><td colspan="20" class="empty-cell">No entries yet. Go to "Enter Team" to add teams.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ============ ENTER TEAM TAB ============ -->
+        <section id="tab-enter" class="tab-content">
+            <div class="two-col">
+                <div class="entry-panel">
+                    <h2>Enter Your Team</h2>
+                    <p class="entry-hint">Pick one team from each of the 4 tiers, then answer the 3 bonus questions.</p>
+                    <form id="teamForm" autocomplete="off">
+                        <div class="form-row">
+                            <label for="entrantName">Your Name</label>
+                            <input type="text" id="entrantName" required placeholder="e.g. Joe Bloggs">
+                        </div>
+                        <div class="form-row">
+                            <label for="teamName">Team Name</label>
+                            <input type="text" id="teamName" required placeholder="e.g. Three Lions Forever">
+                        </div>
+                        <div class="form-row">
+                            <label for="pickTier1">Tier 1 (&times;1)</label>
+                            <select id="pickTier1" required><option value="">-- Select --</option></select>
+                        </div>
+                        <div class="form-row">
+                            <label for="pickTier2">Tier 2 (&times;1.5)</label>
+                            <select id="pickTier2" required><option value="">-- Select --</option></select>
+                        </div>
+                        <div class="form-row">
+                            <label for="pickTier3">Tier 3 (&times;2)</label>
+                            <select id="pickTier3" required><option value="">-- Select --</option></select>
+                        </div>
+                        <div class="form-row">
+                            <label for="pickTier4">Tier 4 (&times;4)</label>
+                            <select id="pickTier4" required><option value="">-- Select --</option></select>
+                        </div>
+                        <div class="bonus-section">
+                            <h3>Bonus Questions <span class="bonus-points-badge">+5 pts each if correct</span></h3>
+                            <div class="form-row">
+                                <label for="bonusGoals">Will there be more than 250 goals in the tournament?</label>
+                                <select id="bonusGoals" required>
+                                    <option value="">-- Select --</option>
+                                    <option value="Y">Yes</option>
+                                    <option value="N">No</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label for="bonusShootouts">How many penalty shootouts in the knockout stage (16 games)?</label>
+                                <input type="number" id="bonusShootouts" min="0" max="16" required placeholder="0 - 16">
+                            </div>
+                            <div class="form-row">
+                                <label for="bonusReds">How many red cards in the tournament?</label>
+                                <input type="number" id="bonusReds" min="0" max="200" required placeholder="e.g. 12">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-submit">Submit Team</button>
+                    </form>
+                </div>
+                <div class="entries-panel">
+                    <h2>Submitted Teams <span id="teamCount" class="badge">0</span></h2>
+                    <div id="entriesList" class="entries-list"></div>
+                    <div class="admin-only backup-panel" style="margin-top:16px">
+                        <h3 class="bonus-admin-title">&#128190; Data Backup &amp; Restore</h3>
+                        <p class="bonus-admin-hint">Download a backup before any deployment. Restore from a previous backup if data is lost.</p>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap">
+                            <button class="btn btn-export" onclick="exportStateBackup()">&#8659; Download Backup</button>
+                            <label class="btn btn-auto" style="cursor:pointer">
+                                &#8657; Restore from Backup
+                                <input type="file" accept=".json" style="display:none" onchange="importStateBackup(event)">
+                            </label>
+                        </div>
+                    </div>
+                    <div class="admin-only bonus-admin-panel" style="margin-top:20px">
+                        <h3 class="bonus-admin-title">&#9733; Bonus Question Answers</h3>
+                        <p class="bonus-admin-hint">Enter correct answers once known. Scores update instantly.</p>
+                        <div id="bonusAdminForm"></div>
+                    </div>
+                    <div class="admin-only results-admin-panel" style="margin-top:20px">
+                        <h3 class="bonus-admin-title">&#9917; Team Results</h3>
+                        <p class="bonus-admin-hint">Enter group-stage W/D/L and knockout wins for each team as the tournament progresses.</p>
+                        <button class="btn btn-small" id="openResultsBtn">Open Results Editor</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ TIERS TAB ============ -->
+        <section id="tab-tiers" class="tab-content">
+            <div class="groups-header">
+                <h2>Team Tiers <span class="groups-locked-badge">&#128274; Locked</span></h2>
+                <div class="groups-actions">
+                    <button class="btn btn-export" id="exportTiersBtn" onclick="exportTiersCSV()" title="Download tiers as CSV">Download CSV</button>
+                </div>
+            </div>
+            <div class="groups-grid" id="tiersGrid"></div>
+        </section>
+
+        <!-- ============ RULES TAB ============ -->
+        <section id="tab-rules" class="tab-content">
+            <div class="rules-layout">
+                <div class="rules-card">
+                    <div class="rules-card-header">RULES</div>
+                    <ul class="rules-list">
+                        <li>Pick <strong>4 teams</strong> &mdash; one from each tier</li>
+                        <li><strong>Tier multipliers</strong> apply to all points scored by that team: Tier 1 &times;1, Tier 2 &times;1.5, Tier 3 &times;2, Tier 4 &times;4</li>
+                        <li><strong>Group stage:</strong> 3 pts per win, 1 per draw, 0 per loss (max 9)</li>
+                        <li><strong>Knockout wins:</strong> +3 pts each for Round of 32, R16, QF, SF, Final (max 15)</li>
+                        <li><strong>3rd-place playoff:</strong> +1 point</li>
+                        <li>Maximum per team: <strong>24 raw pts</strong> &times; tier multiplier</li>
+                        <li>Highest total wins. Entrant total = sum of all 4 picks' scores</li>
+                    </ul>
+                </div>
+                <div class="rules-card prize-card">
+                    <div class="rules-card-header">PRIZES</div>
+                    <ul class="rules-list">
+                        <li><strong>1st place</strong> takes <strong>60%</strong> of prize pool</li>
+                        <li><strong>2nd place</strong> takes <strong>25%</strong> of prize pool</li>
+                        <li><strong>3rd place</strong> takes <strong>10%</strong> of prize pool</li>
+                        <li><strong>Wooden spoon</strong> takes <strong>5%</strong> of prize pool</li>
+                        <li>If tied, winnings shared evenly between tied entrants</li>
+                    </ul>
+                </div>
+                <div class="bonus-card">
+                    <div class="rules-card-header">BONUS QUESTIONS</div>
+                    <p class="bonus-rule-hint">Each correct answer = <strong>+5 bonus points</strong>. Exact match only.</p>
+                    <div id="bonusQuestionsDisplay"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ DETAIL TAB ============ -->
+        <section id="tab-detail" class="tab-content">
+            <div class="detail-header">
+                <h2>Selections &amp; Detailed Scoring</h2>
+            </div>
+            <div id="detailContent">
+                <p class="empty-cell" style="padding:20px">No entries yet.</p>
+            </div>
+        </section>
+
+        <!-- ============ ANALYTICS TAB ============ -->
+        <section id="tab-analytics" class="tab-content">
+            <div class="analytics-header">
+                <h2>Sweep Analytics</h2>
+            </div>
+            <div id="analyticsContent">
+                <p class="empty-cell" style="padding:20px">Loading analytics...</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Admin password modal -->
+    <div class="modal-overlay" id="adminPwModal">
+        <div class="modal modal-sm">
+            <h3>&#128274; Admin Access</h3>
+            <p class="modal-hint">Enter the admin password to continue.</p>
+            <div class="form-row" style="margin-top:12px">
+                <input type="password" id="adminPwInput" placeholder="Password" style="width:100%"
+                    onkeydown="if(event.key==='Enter') confirmAdminPassword()">
+            </div>
+            <p id="adminPwError" style="color:var(--red-500);font-size:12px;margin-top:6px;display:none">Incorrect password.</p>
+            <div class="modal-actions">
+                <button class="btn btn-submit" onclick="confirmAdminPassword()">Enter</button>
+                <button class="btn btn-cancel" onclick="closeAdminModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results editor modal -->
+    <div class="modal-overlay" id="resultsModal">
+        <div class="modal modal-lg">
+            <h3>Team Results Editor</h3>
+            <p class="modal-hint">Enter W/D/L for the group stage (3 games each) and knockout wins. 3rd-place flag awards +1 pt.</p>
+            <div id="resultsModalBody" class="results-grid"></div>
+            <div class="modal-actions">
+                <button class="btn btn-submit" id="saveResultsBtn">Save</button>
+                <button class="btn btn-cancel" id="cancelResultsBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <p>World Cup 2026 Sweepstake | <span id="footerUpdated">--</span></p>
+    </footer>
+
+    <script src="js/app.js?v=1"></script>
+</body>
+</html>
