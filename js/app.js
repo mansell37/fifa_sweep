@@ -13,7 +13,7 @@ const STORAGE = {
     settings: 'wcSweep_settings',
 };
 const STORAGE_BACKUP_SUFFIX = '_backup';
-const ADMIN_PASSWORD = 'admin2026';
+const ADMIN_PASSWORD = 'fifa2026';
 
 const TIER_MULTIPLIERS = { 1: 1, 2: 1.5, 3: 2, 4: 4 };
 const TIER_LABELS = { 1: 'Tier 1 (×1)', 2: 'Tier 2 (×1.5)', 3: 'Tier 3 (×2)', 4: 'Tier 4 (×4)' };
