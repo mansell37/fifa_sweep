@@ -37,7 +37,7 @@ const DEFAULT_STATE = {
   tiers: JSON.parse(JSON.stringify(DEFAULT_TIERS)),
   entries: [],
   results: {},
-  bonus: { goalsOver250: "", penaltyShootouts: "", redCards: "" },
+  bonus: { goalsOver250: "", penaltyShootouts: "", winnerEuropean: "", australiaThroughGroup: "" },
   settings: {},
 };
 
@@ -65,7 +65,8 @@ function safeStateShape(state) {
     bonus: {
       goalsOver250: bonus.goalsOver250 ?? "",
       penaltyShootouts: bonus.penaltyShootouts ?? "",
-      redCards: bonus.redCards ?? "",
+      winnerEuropean: bonus.winnerEuropean ?? "",
+      australiaThroughGroup: bonus.australiaThroughGroup ?? "",
     },
     settings,
   };
@@ -185,8 +186,9 @@ function entryEmailHtml(entry, state) {
     <h3 style="color:#0a1a3a;margin:16px 0 6px">Bonus answers</h3>
     <p style="margin:0">
       &gt;290 goals (104 matches): <strong>${escHtml(a.goalsOver250 || "—")}</strong><br>
-      Penalty shootouts (knockout): <strong>${escHtml(a.penaltyShootouts ?? "—")}</strong><br>
-      Red cards (whole tournament): <strong>${escHtml(a.redCards ?? "—")}</strong>
+      Penalty shootouts (32 KO games): <strong>${escHtml(a.penaltyShootouts ?? "—")}</strong><br>
+      Tournament winner European: <strong>${escHtml(a.winnerEuropean || "—")}</strong><br>
+      Australia through group stage: <strong>${escHtml(a.australiaThroughGroup || "—")}</strong>
     </p>
     <p style="margin-top:18px;color:#4b5563">Total entries now: <strong>${state.entries.length}</strong></p>
     <hr style="border:0;border-top:1px solid #e5e7eb;margin:20px 0">
@@ -208,8 +210,9 @@ ${picks}
 
 Bonus answers:
   >290 goals (104 matches): ${a.goalsOver250 || "—"}
-  Penalty shootouts (knockout): ${a.penaltyShootouts ?? "—"}
-  Red cards (whole tournament): ${a.redCards ?? "—"}
+  Penalty shootouts (32 KO games): ${a.penaltyShootouts ?? "—"}
+  Tournament winner European: ${a.winnerEuropean || "—"}
+  Australia through group stage: ${a.australiaThroughGroup || "—"}
 
 Total entries now: ${state.entries.length}
 
@@ -289,11 +292,13 @@ function validateEntryPayload(payload, currentTiers) {
   const ba = payload.bonusAnswers || {};
   const goals = String(ba.goalsOver250 || "").trim();
   const shootouts = String(ba.penaltyShootouts ?? "").trim();
-  const reds = String(ba.redCards ?? "").trim();
+  const european = String(ba.winnerEuropean || "").trim();
+  const australia = String(ba.australiaThroughGroup || "").trim();
   if (goals !== "Y" && goals !== "N") return "bonusAnswers.goalsOver250 must be Y or N";
   if (!/^\d{1,3}$/.test(shootouts)) return "bonusAnswers.penaltyShootouts must be a number";
-  if (!/^\d{1,3}$/.test(reds)) return "bonusAnswers.redCards must be a number";
-  return { entrant, team, picks, bonusAnswers: { goalsOver250: goals, penaltyShootouts: shootouts, redCards: reds } };
+  if (european !== "Y" && european !== "N") return "bonusAnswers.winnerEuropean must be Y or N";
+  if (australia !== "Y" && australia !== "N") return "bonusAnswers.australiaThroughGroup must be Y or N";
+  return { entrant, team, picks, bonusAnswers: { goalsOver250: goals, penaltyShootouts: shootouts, winnerEuropean: european, australiaThroughGroup: australia } };
 }
 
 app.get("/health", (_req, res) => {

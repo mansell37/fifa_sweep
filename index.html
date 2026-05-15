@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Cup 2026 Sweepstake</title>
-    <link rel="stylesheet" href="css/style.css?v=8">
+    <link rel="stylesheet" href="css/style.css?v=9">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -61,7 +61,7 @@
             <div class="two-col">
                 <div class="entry-panel">
                     <h2>Enter Your Team</h2>
-                    <p class="entry-hint">Pick one team from each of the 5 groups, then answer the 3 bonus questions.</p>
+                    <p class="entry-hint">Pick one team from each of the 5 groups, then answer the 4 bonus questions.</p>
                     <form id="teamForm" autocomplete="off">
                         <div class="form-row">
                             <label for="entrantName">Your Name</label>
@@ -102,12 +102,24 @@
                                 </select>
                             </div>
                             <div class="form-row">
-                                <label for="bonusShootouts">How many penalty shootouts will there be in the knockout stage?</label>
+                                <label for="bonusShootouts">How many penalty shootouts will there be in the knockout stage? (32 games)</label>
                                 <input type="number" id="bonusShootouts" min="0" max="32" required placeholder="0 - 32">
                             </div>
                             <div class="form-row">
-                                <label for="bonusReds">How many red cards will there be in the whole tournament?</label>
-                                <input type="number" id="bonusReds" min="0" max="200" required placeholder="e.g. 12">
+                                <label for="bonusEuropean">Will the tournament winner be a European team?</label>
+                                <select id="bonusEuropean" required>
+                                    <option value="">-- Select --</option>
+                                    <option value="Y">Yes</option>
+                                    <option value="N">No</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label for="bonusAustralia">Will Australia make it out of the group stage?</label>
+                                <select id="bonusAustralia" required>
+                                    <option value="">-- Select --</option>
+                                    <option value="Y">Yes</option>
+                                    <option value="N">No</option>
+                                </select>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-submit">Submit Team</button>
@@ -239,6 +251,6 @@
         <p>World Cup 2026 Sweepstake | <span id="footerUpdated">--</span></p>
     </footer>
 
-    <script src="js/app.js?v=8"></script>
+    <script src="js/app.js?v=9"></script>
 </body>
 </html>

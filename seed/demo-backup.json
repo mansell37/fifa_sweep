@@ -3,85 +3,85 @@
     {
       "id": "demo_01", "entrant": "Matt Ansell", "team": "Hoof It Long",
       "picks": ["Spain", "Argentina", "Morocco", "Scotland", "Cape Verde"],
-      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "4", "redCards": "11" },
+      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "4", "winnerEuropean": "Y", "australiaThroughGroup": "N" },
       "createdAt": 1747200000000
     },
     {
       "id": "demo_02", "entrant": "Joe Bloggs", "team": "Park The Bus",
       "picks": ["France", "Portugal", "Japan", "Egypt", "Saudi Arabia"],
-      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "3", "redCards": "8" },
+      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "3", "winnerEuropean": "Y", "australiaThroughGroup": "N" },
       "createdAt": 1747200001000
     },
     {
       "id": "demo_03", "entrant": "Jane Doe", "team": "Tiki Taka",
       "picks": ["England", "Germany", "USA", "Bosnia", "DR Congo"],
-      "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "2", "redCards": "15" },
+      "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "2", "winnerEuropean": "N", "australiaThroughGroup": "Y" },
       "createdAt": 1747200002000
     },
     {
       "id": "demo_04", "entrant": "Alex Smith", "team": "Counter Press",
       "picks": ["Brazil", "Netherlands", "Turkey", "Iran", "New Zealand"],
-      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "5", "redCards": "10" },
+      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "5", "winnerEuropean": "N", "australiaThroughGroup": "N" },
       "createdAt": 1747200003000
     },
     {
       "id": "demo_05", "entrant": "Sam Taylor", "team": "Top Bins",
       "picks": ["France", "Belgium", "Mexico", "Australia", "Qatar"],
-      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "3", "redCards": "12" },
+      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "3", "winnerEuropean": "Y", "australiaThroughGroup": "Y" },
       "createdAt": 1747200004000
     },
     {
       "id": "demo_06", "entrant": "Pat Brown", "team": "Route One",
       "picks": ["England", "Norway", "Croatia", "Paraguay", "Panama"],
-      "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "4", "redCards": "9" },
+      "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "4", "winnerEuropean": "Y", "australiaThroughGroup": "N" },
       "createdAt": 1747200005000
     },
     {
       "id": "demo_07", "entrant": "Chris Jones", "team": "Cantona FC",
       "picks": ["Spain", "Argentina", "Uruguay", "Ghana", "Iraq"],
-      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "6", "redCards": "13" },
+      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "6", "winnerEuropean": "N", "australiaThroughGroup": "N" },
       "createdAt": 1747200006000
     },
     {
       "id": "demo_08", "entrant": "Dana White", "team": "Lampard Lounge",
       "picks": ["Brazil", "Portugal", "Switzerland", "Tunisia", "Saudi Arabia"],
-      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "3", "redCards": "14" },
+      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "3", "winnerEuropean": "N", "australiaThroughGroup": "N" },
       "createdAt": 1747200007000
     },
     {
       "id": "demo_09", "entrant": "Robin Lee", "team": "Tackle Box",
       "picks": ["France", "Germany", "Sweden", "South Korea", "Uzbekistan"],
-      "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "2", "redCards": "10" },
+      "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "2", "winnerEuropean": "Y", "australiaThroughGroup": "N" },
       "createdAt": 1747200008000
     },
     {
       "id": "demo_10", "entrant": "Casey Park", "team": "Goal Hangers",
       "picks": ["England", "Netherlands", "Senegal", "Canada", "Jordan"],
-      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "5", "redCards": "11" },
+      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "5", "winnerEuropean": "Y", "australiaThroughGroup": "Y" },
       "createdAt": 1747200009000
     },
     {
       "id": "demo_11", "entrant": "Morgan Reed", "team": "Kick Off Kings",
       "picks": ["Spain", "Norway", "Mexico", "Algeria", "South Africa"],
-      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "4", "redCards": "12" },
+      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "4", "winnerEuropean": "Y", "australiaThroughGroup": "N" },
       "createdAt": 1747200010000
     },
     {
       "id": "demo_12", "entrant": "Quinn Adams", "team": "Half Time Heroes",
       "picks": ["Brazil", "Belgium", "Colombia", "Ivory Coast", "Haiti"],
-      "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "3", "redCards": "16" },
+      "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "3", "winnerEuropean": "N", "australiaThroughGroup": "N" },
       "createdAt": 1747200011000
     },
     {
       "id": "demo_13", "entrant": "Riley Chen", "team": "Boots & All",
       "picks": ["France", "Argentina", "Japan", "Scotland", "Curacao"],
-      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "5", "redCards": "9" },
+      "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "5", "winnerEuropean": "Y", "australiaThroughGroup": "Y" },
       "createdAt": 1747200012000
     },
     {
       "id": "demo_14", "entrant": "Jordan Hall", "team": "Wonder Goal",
       "picks": ["England", "Germany", "Morocco", "Egypt", "Cape Verde"],
-      "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "4", "redCards": "11" },
+      "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "4", "winnerEuropean": "N", "australiaThroughGroup": "N" },
       "createdAt": 1747200013000
     }
   ],
@@ -132,6 +132,6 @@
     "Haiti":        { "groupW": 0, "groupD": 0, "groupL": 3, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
     "Curacao":      { "groupW": 1, "groupD": 0, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false }
   },
-  "bonus": { "goalsOver250": "", "penaltyShootouts": "", "redCards": "" },
+  "bonus": { "goalsOver250": "", "penaltyShootouts": "", "winnerEuropean": "", "australiaThroughGroup": "" },
   "settings": {}
 }

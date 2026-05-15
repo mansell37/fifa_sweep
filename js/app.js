@@ -44,8 +44,9 @@ const KO_ROUNDS = [
 
 const BONUS_QUESTIONS = [
     { key: 'goalsOver250', label: 'More than 290 goals in the tournament? (104 matches)', type: 'yn', short: '>290 goals' },
-    { key: 'penaltyShootouts', label: 'How many penalty shootouts in the knockout stage?', type: 'num', short: 'Shootouts' },
-    { key: 'redCards', label: 'How many red cards in the whole tournament?', type: 'num', short: 'Red cards' },
+    { key: 'penaltyShootouts', label: 'How many penalty shootouts in the knockout stage? (32 games)', type: 'num', short: 'Shootouts' },
+    { key: 'winnerEuropean', label: 'Will the tournament winner be a European team?', type: 'yn', short: 'European winner' },
+    { key: 'australiaThroughGroup', label: 'Will Australia make it out of the group stage?', type: 'yn', short: 'Aus through groups' },
 ];
 const BONUS_POINTS_PER_CORRECT = 5;
 
@@ -55,7 +56,7 @@ const BONUS_POINTS_PER_CORRECT = 5;
 let tiers          = JSON.parse(JSON.stringify(DEFAULT_TIERS));  // { 1..5: [teamName, ...] }
 let entries        = [];
 let results        = {};   // teamName -> { groupW, groupD, groupL, r32, r16, qf, sf, final, thirdPlace }
-let bonus          = { goalsOver250: '', penaltyShootouts: '', redCards: '' };
+let bonus          = { goalsOver250: '', penaltyShootouts: '', winnerEuropean: '', australiaThroughGroup: '' };
 let settings       = {};
 let activeTab      = 'sweep';
 let adminMode      = false;
@@ -122,8 +123,9 @@ async function loadFromServer() {
         bonus = isObject(state.bonus) ? {
             goalsOver250: state.bonus.goalsOver250 || '',
             penaltyShootouts: state.bonus.penaltyShootouts ?? '',
-            redCards: state.bonus.redCards ?? '',
-        } : { goalsOver250: '', penaltyShootouts: '', redCards: '' };
+            winnerEuropean: state.bonus.winnerEuropean || '',
+            australiaThroughGroup: state.bonus.australiaThroughGroup || '',
+        } : { goalsOver250: '', penaltyShootouts: '', winnerEuropean: '', australiaThroughGroup: '' };
         settings = isObject(state.settings) ? state.settings : {};
         // Mirror to local cache
         save(STORAGE.entries, entries);
@@ -181,8 +183,9 @@ function normalizeEntries(arr) {
         bonusAnswers: isObject(en.bonusAnswers) ? {
             goalsOver250: en.bonusAnswers.goalsOver250 || '',
             penaltyShootouts: en.bonusAnswers.penaltyShootouts ?? '',
-            redCards: en.bonusAnswers.redCards ?? '',
-        } : { goalsOver250: '', penaltyShootouts: '', redCards: '' },
+            winnerEuropean: en.bonusAnswers.winnerEuropean || '',
+            australiaThroughGroup: en.bonusAnswers.australiaThroughGroup || '',
+        } : { goalsOver250: '', penaltyShootouts: '', winnerEuropean: '', australiaThroughGroup: '' },
         createdAt: en.createdAt || Date.now(),
     });
     });
@@ -231,8 +234,8 @@ function bonusPointsFor(entry) {
     if (bonus.goalsOver250 && a.goalsOver250 && a.goalsOver250 === bonus.goalsOver250) pts += BONUS_POINTS_PER_CORRECT;
     if (bonus.penaltyShootouts !== '' && a.penaltyShootouts !== '' && a.penaltyShootouts != null
         && Number(a.penaltyShootouts) === Number(bonus.penaltyShootouts)) pts += BONUS_POINTS_PER_CORRECT;
-    if (bonus.redCards !== '' && a.redCards !== '' && a.redCards != null
-        && Number(a.redCards) === Number(bonus.redCards)) pts += BONUS_POINTS_PER_CORRECT;
+    if (bonus.winnerEuropean && a.winnerEuropean && a.winnerEuropean === bonus.winnerEuropean) pts += BONUS_POINTS_PER_CORRECT;
+    if (bonus.australiaThroughGroup && a.australiaThroughGroup && a.australiaThroughGroup === bonus.australiaThroughGroup) pts += BONUS_POINTS_PER_CORRECT;
     return pts;
 }
 
@@ -292,10 +295,11 @@ function setupEntryForm() {
         const bonusAnswers = {
             goalsOver250: document.getElementById('bonusGoals').value,
             penaltyShootouts: document.getElementById('bonusShootouts').value,
-            redCards: document.getElementById('bonusReds').value,
+            winnerEuropean: document.getElementById('bonusEuropean').value,
+            australiaThroughGroup: document.getElementById('bonusAustralia').value,
         };
-        if (!bonusAnswers.goalsOver250 || bonusAnswers.penaltyShootouts === '' || bonusAnswers.redCards === '') {
-            alert('Please answer all three bonus questions.');
+        if (!bonusAnswers.goalsOver250 || bonusAnswers.penaltyShootouts === '' || !bonusAnswers.winnerEuropean || !bonusAnswers.australiaThroughGroup) {
+            alert('Please answer all four bonus questions.');
             return;
         }
         const submitBtn = form.querySelector('button[type="submit"]');
@@ -527,15 +531,17 @@ function renderAnalytics() {
         .slice(0, 8);
 
     // --- Bonus consensus ---
-    let goalsY = 0, goalsN = 0;
+    let goalsY = 0, goalsN = 0, europeanY = 0, europeanN = 0, ausY = 0, ausN = 0;
     const shootouts = [];
-    const reds = [];
     for (const en of entries) {
         const a = en.bonusAnswers || {};
         if (a.goalsOver250 === 'Y') goalsY++;
         else if (a.goalsOver250 === 'N') goalsN++;
+        if (a.winnerEuropean === 'Y') europeanY++;
+        else if (a.winnerEuropean === 'N') europeanN++;
+        if (a.australiaThroughGroup === 'Y') ausY++;
+        else if (a.australiaThroughGroup === 'N') ausN++;
         if (a.penaltyShootouts !== '' && a.penaltyShootouts != null) shootouts.push(Number(a.penaltyShootouts));
-        if (a.redCards !== '' && a.redCards != null) reds.push(Number(a.redCards));
     }
     const numOrDash = arr => arr.length ? (arr.reduce((s, v) => s + v, 0) / arr.length).toFixed(1) : '—';
     const rangeOrDash = arr => arr.length ? `${Math.min(...arr)} – ${Math.max(...arr)}` : '—';
@@ -594,11 +600,11 @@ function renderAnalytics() {
 
         <div class="analytics-card">
             <h3>Bonus question consensus</h3>
-            <div class="analytics-stat-row"><span>&gt;250 goals: Yes vs No</span><span class="stat-val">${goalsY} / ${goalsN}</span></div>
+            <div class="analytics-stat-row"><span>&gt;290 goals: Yes / No</span><span class="stat-val">${goalsY} / ${goalsN}</span></div>
             <div class="analytics-stat-row"><span>Avg shootouts guess</span><span class="stat-val">${numOrDash(shootouts)}</span></div>
             <div class="analytics-stat-row"><span>Shootouts range</span><span class="stat-val">${rangeOrDash(shootouts)}</span></div>
-            <div class="analytics-stat-row"><span>Avg red cards guess</span><span class="stat-val">${numOrDash(reds)}</span></div>
-            <div class="analytics-stat-row"><span>Red cards range</span><span class="stat-val">${rangeOrDash(reds)}</span></div>
+            <div class="analytics-stat-row"><span>European winner: Yes / No</span><span class="stat-val">${europeanY} / ${europeanN}</span></div>
+            <div class="analytics-stat-row"><span>Australia through groups: Yes / No</span><span class="stat-val">${ausY} / ${ausN}</span></div>
         </div>
 
         <div class="analytics-card analytics-card-tall">
