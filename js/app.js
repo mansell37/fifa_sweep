@@ -48,7 +48,7 @@ const BONUS_QUESTIONS = [
     { key: 'winnerEuropean', label: 'Will the tournament winner be a European team?', type: 'yn', short: 'European winner' },
     { key: 'australiaThroughGroup', label: 'Will Australia make it out of the group stage?', type: 'yn', short: 'Aus through groups' },
 ];
-const BONUS_POINTS_PER_CORRECT = 5;
+const BONUS_POINTS_PER_CORRECT = 3;
 
 // =============================================================
 // APPLICATION STATE

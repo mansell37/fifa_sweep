@@ -13,13 +13,13 @@ Companion sweep app for the FIFA World Cup 2026. Static frontend + tiny Express 
 - **1 pt** per group-stage draw
 - Max raw per team: **24 pts × group multiplier**
 
-### Bonus questions (+5 each, exact match)
+### Bonus questions (+3 each, exact match)
 1. More than 290 goals in the tournament? (104 matches) (Y/N)
 2. Number of penalty shootouts in the knockout stage (32 games)
 3. Will the tournament winner be a European team? (Y/N)
 4. Will Australia make it out of the group stage? (Y/N)
 
-Max bonus: 20 pts.
+Max bonus: 12 pts.
 
 ## Local run
 
