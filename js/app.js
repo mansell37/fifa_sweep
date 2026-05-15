@@ -39,9 +39,9 @@ const KO_ROUNDS = [
 ];
 
 const BONUS_QUESTIONS = [
-    { key: 'goalsOver250', label: 'More than 250 goals in the tournament?', type: 'yn', short: '>250 goals' },
-    { key: 'penaltyShootouts', label: 'Penalty shootouts in the knockout stage (16 games)', type: 'num', short: 'Shootouts' },
-    { key: 'redCards', label: 'Total red cards in the tournament', type: 'num', short: 'Red cards' },
+    { key: 'goalsOver250', label: 'More than 290 goals in the tournament? (104 matches)', type: 'yn', short: '>290 goals' },
+    { key: 'penaltyShootouts', label: 'How many penalty shootouts in the knockout stage?', type: 'num', short: 'Shootouts' },
+    { key: 'redCards', label: 'How many red cards in the whole tournament?', type: 'num', short: 'Red cards' },
 ];
 const BONUS_POINTS_PER_CORRECT = 5;
 
@@ -178,7 +178,7 @@ function teamRawPoints(teamName) {
     let koWins = 0;
     for (const round of KO_ROUNDS) if (r[round.key]) koWins += 1;
     pts += koWins * 3;
-    if (r.thirdPlace) pts += 1;
+    if (r.thirdPlace) pts += 3;
     return pts;
 }
 
@@ -350,7 +350,7 @@ function pickCell(teamName, tier) {
     const koWins = KO_ROUNDS.filter(rd => r[rd.key]).length;
     const totalWins = (r.groupW || 0) + koWins;
     const thirdChip = r.thirdPlace
-        ? `<span class="ko-chip" title="3rd-place playoff winner (+1)">3rd</span>`
+        ? `<span class="ko-chip" title="3rd-place playoff winner (+3)">3rd</span>`
         : '';
     return `<td class="pick-cell">
         <div class="pick-row">
@@ -580,7 +580,6 @@ function setupAdmin() {
             adminMode = false;
             document.body.classList.remove('admin-active');
             document.getElementById('adminToggle').classList.remove('active');
-            if (activeTab === 'enter') activateTab('sweep');
             renderEntriesList();
         } else {
             document.getElementById('adminPwModal').classList.add('active');
@@ -600,6 +599,7 @@ window.confirmAdminPassword = function () {
         closeAdminModal();
         renderEntriesList();
         renderBonusAdminForm();
+        renderSnapshotList();
     } else {
         document.getElementById('adminPwError').style.display = 'block';
     }
@@ -643,6 +643,72 @@ function renderBonusAdminForm() {
         renderRulesBonus();
     });
 }
+
+// =============================================================
+// ADMIN: SERVER SNAPSHOTS
+// =============================================================
+function setupSnapshotPanel() {
+    const btn = document.getElementById('refreshSnapshotsBtn');
+    if (btn) btn.addEventListener('click', renderSnapshotList);
+}
+
+function parseSnapshotTimestamp(filename) {
+    // state-YYYYMMDD-HHMMSS(-mmm)?.json (UTC)
+    const m = filename.match(/^state-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})(?:-(\d{3}))?\.json$/);
+    if (!m) return null;
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6], +(m[7] || 0)));
+}
+
+async function renderSnapshotList() {
+    const root = document.getElementById('snapshotList');
+    const countEl = document.getElementById('snapshotCount');
+    if (!root) return;
+    root.innerHTML = '<p class="empty-cell" style="padding:8px">Loading...</p>';
+    try {
+        const res = await fetch('/api/backups');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const list = await res.json();
+        if (countEl) countEl.textContent = `${list.length} snapshot${list.length === 1 ? '' : 's'}`;
+        if (list.length === 0) {
+            root.innerHTML = '<p class="empty-cell" style="padding:8px">No snapshots yet — save a change first.</p>';
+            return;
+        }
+        root.innerHTML = list.map(s => {
+            const ts = parseSnapshotTimestamp(s.filename) || new Date(s.mtime);
+            const local = ts.toLocaleString();
+            const entriesLabel = s.entries == null ? '—' : `${s.entries} entries`;
+            return `<div class="snapshot-row">
+                <div class="snapshot-meta">
+                    <span class="snapshot-time">${escapeHtml(local)}</span>
+                    <span class="snapshot-entries">${entriesLabel}</span>
+                </div>
+                <div class="snapshot-actions">
+                    <a class="btn btn-small btn-export" href="/api/backups/${encodeURIComponent(s.filename)}" download>&#8659;</a>
+                    <button class="btn btn-small btn-restore" onclick="restoreSnapshot('${escapeAttr(s.filename)}')">Restore</button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        root.innerHTML = `<p class="empty-cell" style="padding:8px;color:var(--red-600)">Failed to load snapshots: ${escapeHtml(e.message)}</p>`;
+    }
+}
+
+window.restoreSnapshot = async function (filename) {
+    if (!confirm(`Restore from ${filename}? This will overwrite ALL current entries, results, and bonus answers.\n\nA fresh snapshot will be saved of the current state first.`)) return;
+    try {
+        const res = await fetch(`/api/backups/restore/${encodeURIComponent(filename)}`, { method: 'POST' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await loadFromServer();
+        populatePickSelects();
+        renderLeaderboard();
+        renderEntriesList();
+        renderRulesBonus();
+        renderSnapshotList();
+        flashToast(`Restored from ${filename}`);
+    } catch (e) {
+        alert('Restore failed: ' + e.message);
+    }
+};
 
 // =============================================================
 // ADMIN: RESULTS EDITOR
@@ -706,7 +772,7 @@ function openResultsModal() {
 function computeRawFromRecord(r) {
     let pts = (r.groupW || 0) * 3 + (r.groupD || 0) * 1;
     pts += [r.r32, r.r16, r.qf, r.sf, r.final].filter(Boolean).length * 3;
-    if (r.thirdPlace) pts += 1;
+    if (r.thirdPlace) pts += 3;
     return pts;
 }
 
@@ -831,6 +897,7 @@ async function init() {
     setupAdmin();
     setupEntryForm();
     setupResultsEditor();
+    setupSnapshotPanel();
     document.getElementById('refreshBtn').addEventListener('click', async () => {
         await loadFromServer();
         populatePickSelects();

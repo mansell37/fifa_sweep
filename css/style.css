@@ -454,12 +454,42 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
 .admin-only { display: none; }
 body.admin-active .admin-only { display: revert; }
 
-.backup-panel, .bonus-admin-panel, .results-admin-panel {
+.backup-panel, .bonus-admin-panel, .results-admin-panel, .snapshot-panel {
     padding: 14px;
     background: var(--wc-cream);
     border-radius: var(--radius-sm);
     border: 1px solid var(--gray-200);
 }
+.snapshot-list {
+    max-height: 280px;
+    overflow-y: auto;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    background: white;
+}
+.snapshot-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 12px;
+}
+.snapshot-row:last-child { border-bottom: 0; }
+.snapshot-row:hover { background: var(--gray-50); }
+.snapshot-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.snapshot-time { font-weight: 600; color: var(--wc-navy-deep); }
+.snapshot-entries { color: var(--gray-500); font-size: 11px; }
+.snapshot-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.snapshot-actions a.btn-export {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    padding: 4px 8px;
+}
+.btn-restore { background: var(--wc-pitch); color: white; }
+.btn-restore:hover { background: #225f3a; }
 .bonus-admin-title {
     font-size: 14px;
     color: var(--wc-navy-deep);

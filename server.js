@@ -6,6 +6,9 @@ const app = express();
 const port = Number(process.env.PORT || 3000);
 const DATA_DIR = path.join(__dirname, "data");
 const DATA_PATH = path.join(DATA_DIR, "state.json");
+const BACKUP_DIR = path.join(DATA_DIR, "backups");
+const BACKUP_KEEP = 50;
+const BACKUP_FILE_RE = /^state-\d{8}-\d{6}(?:-\d{3})?\.json$/;
 
 const DEFAULT_STATE = {
   tiers: { 1: [], 2: [], 3: [], 4: [] },
@@ -74,7 +77,65 @@ async function writeState(state) {
   const nextState = safeStateShape(state);
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(DATA_PATH, JSON.stringify(nextState), "utf8");
+  // Best-effort timestamped snapshot. Doesn't block or fail the write.
+  writeBackupSnapshot(nextState).catch((e) => console.warn("Snapshot failed:", e.message));
   return nextState;
+}
+
+function snapshotFilename(d = new Date()) {
+  const pad = (n) => String(n).padStart(2, "0");
+  const ms = String(d.getUTCMilliseconds()).padStart(3, "0");
+  return `state-${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}-${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}-${ms}.json`;
+}
+
+async function writeBackupSnapshot(state) {
+  await fs.mkdir(BACKUP_DIR, { recursive: true });
+  const filename = snapshotFilename();
+  await fs.writeFile(path.join(BACKUP_DIR, filename), JSON.stringify(state), "utf8");
+  await pruneOldBackups();
+}
+
+async function pruneOldBackups() {
+  try {
+    const files = (await fs.readdir(BACKUP_DIR))
+      .filter((f) => BACKUP_FILE_RE.test(f))
+      .sort();
+    if (files.length <= BACKUP_KEEP) return;
+    const excess = files.slice(0, files.length - BACKUP_KEEP);
+    await Promise.all(excess.map((f) => fs.unlink(path.join(BACKUP_DIR, f)).catch(() => {})));
+  } catch (e) {
+    if (e && e.code !== "ENOENT") console.warn("Backup prune failed:", e.message);
+  }
+}
+
+async function listBackups() {
+  try {
+    const files = (await fs.readdir(BACKUP_DIR)).filter((f) => BACKUP_FILE_RE.test(f));
+    const enriched = await Promise.all(
+      files.map(async (f) => {
+        try {
+          const filePath = path.join(BACKUP_DIR, f);
+          const stat = await fs.stat(filePath);
+          let entryCount = null;
+          try {
+            const parsed = JSON.parse(await fs.readFile(filePath, "utf8"));
+            entryCount = Array.isArray(parsed?.entries) ? parsed.entries.length : null;
+          } catch (_) {}
+          return { filename: f, mtime: stat.mtime.toISOString(), size: stat.size, entries: entryCount };
+        } catch (_) {
+          return null;
+        }
+      })
+    );
+    return enriched.filter(Boolean).sort((a, b) => (a.mtime < b.mtime ? 1 : -1));
+  } catch (e) {
+    if (e && e.code === "ENOENT") return [];
+    throw e;
+  }
+}
+
+function isSafeBackupName(name) {
+  return typeof name === "string" && BACKUP_FILE_RE.test(name);
 }
 
 function enqueueWrite(task) {
@@ -118,6 +179,50 @@ app.put("/api/state", async (req, res) => {
     return res.json(updated);
   } catch (error) {
     return res.status(500).json({ error: "Failed to persist state", detail: String(error) });
+  }
+});
+
+app.get("/api/backups", async (_req, res) => {
+  try {
+    return res.json(await listBackups());
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to list backups", detail: String(error) });
+  }
+});
+
+app.get("/api/backups/:filename", async (req, res) => {
+  if (!isSafeBackupName(req.params.filename)) {
+    return res.status(400).json({ error: "Invalid backup filename" });
+  }
+  try {
+    const filePath = path.join(BACKUP_DIR, req.params.filename);
+    const raw = await fs.readFile(filePath, "utf8");
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Disposition", `attachment; filename="${req.params.filename}"`);
+    return res.send(raw);
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      return res.status(404).json({ error: "Backup not found" });
+    }
+    return res.status(500).json({ error: "Failed to read backup", detail: String(error) });
+  }
+});
+
+app.post("/api/backups/restore/:filename", async (req, res) => {
+  if (!isSafeBackupName(req.params.filename)) {
+    return res.status(400).json({ error: "Invalid backup filename" });
+  }
+  try {
+    const filePath = path.join(BACKUP_DIR, req.params.filename);
+    const raw = await fs.readFile(filePath, "utf8");
+    const snapshot = safeStateShape(JSON.parse(raw));
+    const restored = await enqueueWrite(async () => writeState(snapshot));
+    return res.json({ ok: true, restored });
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      return res.status(404).json({ error: "Backup not found" });
+    }
+    return res.status(500).json({ error: "Failed to restore backup", detail: String(error) });
   }
 });
 

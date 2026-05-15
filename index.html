@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Cup 2026 Sweepstake</title>
-    <link rel="stylesheet" href="css/style.css?v=5">
+    <link rel="stylesheet" href="css/style.css?v=6">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -17,7 +17,7 @@
             </div>
             <nav class="nav-tabs" id="navTabs">
                 <button class="tab-btn active" data-tab="sweep">Leaderboard</button>
-                <button class="tab-btn admin-only" data-tab="enter">Enter Team</button>
+                <button class="tab-btn" data-tab="enter">Enter Team</button>
                 <button class="tab-btn" data-tab="tiers">Groups</button>
                 <button class="tab-btn" data-tab="rules">Rules &amp; Prizes</button>
                 <button class="tab-btn" data-tab="analytics">Analytics</button>
@@ -90,7 +90,7 @@
                         <div class="bonus-section">
                             <h3>Bonus Questions <span class="bonus-points-badge">+5 pts each if correct</span></h3>
                             <div class="form-row">
-                                <label for="bonusGoals">Will there be more than 250 goals in the tournament?</label>
+                                <label for="bonusGoals">Will there be more than 290 goals in the tournament? (104 matches)</label>
                                 <select id="bonusGoals" required>
                                     <option value="">-- Select --</option>
                                     <option value="Y">Yes</option>
@@ -98,11 +98,11 @@
                                 </select>
                             </div>
                             <div class="form-row">
-                                <label for="bonusShootouts">How many penalty shootouts in the knockout stage (16 games)?</label>
-                                <input type="number" id="bonusShootouts" min="0" max="16" required placeholder="0 - 16">
+                                <label for="bonusShootouts">How many penalty shootouts will there be in the knockout stage?</label>
+                                <input type="number" id="bonusShootouts" min="0" max="32" required placeholder="0 - 32">
                             </div>
                             <div class="form-row">
-                                <label for="bonusReds">How many red cards in the tournament?</label>
+                                <label for="bonusReds">How many red cards will there be in the whole tournament?</label>
                                 <input type="number" id="bonusReds" min="0" max="200" required placeholder="e.g. 12">
                             </div>
                         </div>
@@ -113,15 +113,24 @@
                     <h2>Submitted Teams <span id="teamCount" class="badge">0</span></h2>
                     <div id="entriesList" class="entries-list"></div>
                     <div class="admin-only backup-panel" style="margin-top:16px">
-                        <h3 class="bonus-admin-title">&#128190; Data Backup &amp; Restore</h3>
-                        <p class="bonus-admin-hint">Download a backup before any deployment. Restore from a previous backup if data is lost.</p>
+                        <h3 class="bonus-admin-title">&#128190; Manual Backup &amp; Restore</h3>
+                        <p class="bonus-admin-hint">Download a copy of all current state. Use Restore to upload a saved JSON file.</p>
                         <div style="display:flex;gap:8px;flex-wrap:wrap">
                             <button class="btn btn-export" onclick="exportStateBackup()">&#8659; Download Backup</button>
                             <label class="btn btn-auto" style="cursor:pointer">
-                                &#8657; Restore from Backup
+                                &#8657; Restore from File
                                 <input type="file" accept=".json" style="display:none" onchange="importStateBackup(event)">
                             </label>
                         </div>
+                    </div>
+                    <div class="admin-only snapshot-panel" style="margin-top:16px">
+                        <h3 class="bonus-admin-title">&#9201;&#65039; Server Auto-Snapshots</h3>
+                        <p class="bonus-admin-hint">Every state change is saved as a timestamped snapshot on the server (up to 50 kept). Download or restore any of them.</p>
+                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+                            <button class="btn btn-small" id="refreshSnapshotsBtn">&#8635; Refresh list</button>
+                            <span id="snapshotCount" class="entrant-small"></span>
+                        </div>
+                        <div id="snapshotList" class="snapshot-list"></div>
                     </div>
                     <div class="admin-only bonus-admin-panel" style="margin-top:20px">
                         <h3 class="bonus-admin-title">&#9733; Bonus Question Answers</h3>
@@ -154,13 +163,12 @@
                 <div class="rules-card">
                     <div class="rules-card-header">RULES</div>
                     <ul class="rules-list">
-                        <li>Pick <strong>4 teams</strong> &mdash; one from each group</li>
-                        <li><strong>Group multipliers</strong> apply to all points scored by that team: Group 1 &times;1, Group 2 &times;1.5, Group 3 &times;2, Group 4 &times;4</li>
-                        <li><strong>Group stage:</strong> 3 pts per win, 1 per draw, 0 per loss (max 9)</li>
-                        <li><strong>Knockout wins:</strong> +3 pts each for Round of 32, R16, QF, SF, Final (max 15)</li>
-                        <li><strong>3rd-place playoff:</strong> +1 point</li>
+                        <li>Pick <strong>one team from each of the 4 groups</strong></li>
+                        <li><strong>3 pts</strong> per win (group stage, knockouts, and 3rd-place playoff)</li>
+                        <li><strong>1 pt</strong> per group-stage draw</li>
+                        <li>Each team's total is multiplied by its <strong>group multiplier</strong>: Group 1 &times;1, Group 2 &times;1.5, Group 3 &times;2, Group 4 &times;4</li>
                         <li>Maximum per team: <strong>24 raw pts</strong> &times; group multiplier</li>
-                        <li>Highest total wins. Entrant total = sum of all 4 picks' scores</li>
+                        <li>Entrant total = sum of all 4 picks. Highest total wins.</li>
                     </ul>
                 </div>
                 <div class="rules-card prize-card">
@@ -214,7 +222,7 @@
     <div class="modal-overlay" id="resultsModal">
         <div class="modal modal-lg">
             <h3>Team Results Editor</h3>
-            <p class="modal-hint">Enter W/D/L for the group stage (3 games each) and knockout wins. 3rd-place flag awards +1 pt.</p>
+            <p class="modal-hint">Enter W/D/L for the group stage (3 games each) and knockout wins. Each win is +3 pts (group, knockout, or 3rd-place playoff).</p>
             <div id="resultsModalBody" class="results-grid"></div>
             <div class="modal-actions">
                 <button class="btn btn-submit" id="saveResultsBtn">Save</button>
@@ -227,6 +235,6 @@
         <p>World Cup 2026 Sweepstake | <span id="footerUpdated">--</span></p>
     </footer>
 
-    <script src="js/app.js?v=5"></script>
+    <script src="js/app.js?v=6"></script>
 </body>
 </html>
