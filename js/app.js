@@ -60,6 +60,7 @@ let bonus          = { goalsOver250: '', penaltyShootouts: '', winnerEuropean: '
 let settings       = {};
 let activeTab      = 'sweep';
 let adminMode      = false;
+let showBonusPicks = false;
 
 function useServerStorage() {
     return window.location.protocol !== 'file:';
@@ -373,7 +374,7 @@ function renderLeaderboard() {
 
     body.innerHTML = ranked.map(({ en, total }, idx) => {
         const rankClass = idx === 0 ? 'r1' : idx === 1 ? 'r2' : idx === 2 ? 'r3' : '';
-        return `
+        const mainRow = `
             <tr>
                 <td class="rank ${rankClass}">${idx + 1}</td>
                 <td>
@@ -384,6 +385,17 @@ function renderLeaderboard() {
                 <td class="total">${formatPts(total)}</td>
             </tr>
         `;
+        const detailRow = showBonusPicks ? `
+            <tr class="bonus-detail-row">
+                <td></td>
+                <td colspan="8">
+                    <div class="bonus-picks-row">
+                        ${BONUS_QUESTIONS.map(q => bonusPickChip(en, q)).join('')}
+                    </div>
+                </td>
+            </tr>
+        ` : '';
+        return mainRow + detailRow;
     }).join('');
 }
 
@@ -417,6 +429,26 @@ function pickCell(teamName, tier) {
 function formatPts(n) {
     if (Number.isInteger(n)) return String(n);
     return n.toFixed(1);
+}
+
+function bonusPickChip(entry, q) {
+    const guess = entry.bonusAnswers?.[q.key];
+    const correct = bonus[q.key];
+    const guessLabel = guess === '' || guess == null ? '—' : String(guess);
+    let cls = 'bonus-pick';
+    let icon = '';
+    if (guess === '' || guess == null) {
+        cls += ' missing';
+    } else if (correct === '' || correct == null) {
+        cls += ' unknown';
+    } else if (String(guess) === String(correct)) {
+        cls += ' correct';
+        icon = '<span class="bonus-pick-icon">✓</span>';
+    } else {
+        cls += ' wrong';
+        icon = '<span class="bonus-pick-icon">✕</span>';
+    }
+    return `<span class="${cls}"><span class="bonus-pick-label">${escapeHtml(q.short)}:</span> ${escapeHtml(guessLabel)}${icon}</span>`;
 }
 
 // =============================================================
@@ -995,6 +1027,11 @@ async function init() {
             }
         } catch (_) { /* ignore */ }
     }
+    document.getElementById('toggleBonusPicks').addEventListener('click', () => {
+        showBonusPicks = !showBonusPicks;
+        document.getElementById('toggleBonusPicks').textContent = showBonusPicks ? 'Hide bonus picks' : 'Show bonus picks';
+        renderLeaderboard();
+    });
     document.getElementById('refreshBtn').addEventListener('click', async () => {
         await loadFromServer();
         populatePickSelects();
