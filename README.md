@@ -30,7 +30,8 @@ npm start
 
 ## Admin
 
-- Default password: `fifa2026` (change `ADMIN_PASSWORD` in `js/app.js` before going live)
+- Default password / admin token: `fifa2026` — change in production by setting the `ADMIN_TOKEN` env var on Railway
+- The admin token is verified against the server (no longer hardcoded in client JS). Modal submission hits `POST /api/admin/verify`; on success the token is stored in localStorage and attached as `X-Admin-Token` to all admin requests
 - Admin mode reveals: bonus-answer entry, team-results editor, manual backup/restore, server auto-snapshots panel, delete-entry buttons
 
 ## Railway deploy
@@ -45,6 +46,7 @@ npm start
 
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
+| `ADMIN_TOKEN` | **recommended** | `fifa2026` | Token required for all admin write operations. Set this on Railway to override the default. |
 | `RESEND_API_KEY` | optional | _empty_ | Enables email notification on each new entry. Get from [resend.com](https://resend.com). |
 | `BACKUP_EMAIL` | optional | `matt.ansell1@nab.com.au` | Comma-separated recipient(s). |
 | `BACKUP_FROM_EMAIL` | optional | `WC Sweep <onboarding@resend.dev>` | From address. The default works without verifying a domain, but Resend will only deliver to the email you signed up with. To send to other addresses, verify your own domain in Resend and update this to e.g. `WC Sweep <noreply@yourdomain.com>`. |
@@ -52,8 +54,13 @@ npm start
 
 ## Endpoints
 
+Public:
 - `GET  /health` → `{ ok: true }`
-- `GET  /api/state` → full state object
+- `GET  /api/state` → full state object (leaderboard / picks / results — non-sensitive)
+- `POST /api/entries` → submit a new entry. Body: `{ entrant, team, picks: [t1,t2,t3,t4], bonusAnswers: { goalsOver250, penaltyShootouts, redCards } }`. Validated server-side; rejects picks not in the group roster.
+- `POST /api/admin/verify` → check admin token via `X-Admin-Token` header. Returns 200/401.
+
+Admin (require `X-Admin-Token: <ADMIN_TOKEN>` header):
 - `PUT  /api/state` → partial update (`tiers`, `entries`, `results`, `bonus`, `settings`)
 - `GET  /api/backups` → list of server auto-snapshots
 - `GET  /api/backups/:filename` → download a specific snapshot

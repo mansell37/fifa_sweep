@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs/promises");
 const path = require("path");
+const crypto = require("crypto");
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -13,6 +14,9 @@ const BACKUP_FILE_RE = /^state-\d{8}-\d{6}(?:-\d{3})?\.json$/;
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const BACKUP_EMAIL = process.env.BACKUP_EMAIL || "matt.ansell1@nab.com.au";
 const BACKUP_FROM_EMAIL = process.env.BACKUP_FROM_EMAIL || "WC Sweep <onboarding@resend.dev>";
+
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "fifa2026";
+const ENTRY_FIELD_MAX = 80;
 
 const DEFAULT_STATE = {
   tiers: { 1: [], 2: [], 3: [], 4: [] },
@@ -241,8 +245,72 @@ function enqueueWrite(task) {
   return writeQueue;
 }
 
+function requireAdminToken(req, res, next) {
+  const token = req.get("X-Admin-Token") || "";
+  if (token === ADMIN_TOKEN) return next();
+  return res.status(401).json({ error: "Admin token required" });
+}
+
+function genEntryId() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return "e_" + crypto.randomBytes(6).toString("hex");
+}
+
+function validateEntryPayload(payload, currentTiers) {
+  if (!payload || typeof payload !== "object") return "Body must be an object";
+  const entrant = String(payload.entrant || "").trim();
+  const team = String(payload.team || "").trim();
+  if (!entrant) return "entrant required";
+  if (!team) return "team required";
+  if (entrant.length > ENTRY_FIELD_MAX || team.length > ENTRY_FIELD_MAX) return "entrant/team too long";
+  if (!Array.isArray(payload.picks) || payload.picks.length !== 4) return "picks must be an array of 4 teams";
+  const picks = payload.picks.map((p) => String(p || "").trim());
+  for (let i = 0; i < 4; i++) {
+    const roster = currentTiers[i + 1] || currentTiers[String(i + 1)] || [];
+    if (!picks[i]) return `Group ${i + 1} pick required`;
+    if (!roster.includes(picks[i])) return `Pick "${picks[i]}" is not in Group ${i + 1}`;
+  }
+  const ba = payload.bonusAnswers || {};
+  const goals = String(ba.goalsOver250 || "").trim();
+  const shootouts = String(ba.penaltyShootouts ?? "").trim();
+  const reds = String(ba.redCards ?? "").trim();
+  if (goals !== "Y" && goals !== "N") return "bonusAnswers.goalsOver250 must be Y or N";
+  if (!/^\d{1,3}$/.test(shootouts)) return "bonusAnswers.penaltyShootouts must be a number";
+  if (!/^\d{1,3}$/.test(reds)) return "bonusAnswers.redCards must be a number";
+  return { entrant, team, picks, bonusAnswers: { goalsOver250: goals, penaltyShootouts: shootouts, redCards: reds } };
+}
+
 app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true });
+});
+
+app.post("/api/admin/verify", (req, res) => {
+  const token = req.get("X-Admin-Token") || "";
+  if (token === ADMIN_TOKEN) return res.json({ ok: true });
+  return res.status(401).json({ ok: false });
+});
+
+app.post("/api/entries", async (req, res) => {
+  try {
+    const { updated, previous, entry } = await enqueueWrite(async () => {
+      const current = await readState();
+      const validated = validateEntryPayload(req.body || {}, current.tiers);
+      if (typeof validated === "string") {
+        const err = new Error(validated);
+        err.status = 400;
+        throw err;
+      }
+      const newEntry = { ...validated, id: genEntryId(), createdAt: Date.now() };
+      const merged = { ...current, entries: [...current.entries, newEntry] };
+      const next = await writeState(merged);
+      return { updated: next, previous: current, entry: newEntry };
+    });
+    notifyNewEntries(previous, updated).catch((e) => console.warn("notifyNewEntries crashed:", e.message));
+    return res.status(201).json({ ok: true, entry, totalEntries: updated.entries.length });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || "Failed to save entry" });
+  }
 });
 
 app.get("/api/state", async (_req, res) => {
@@ -254,7 +322,7 @@ app.get("/api/state", async (_req, res) => {
   }
 });
 
-app.put("/api/state", async (req, res) => {
+app.put("/api/state", requireAdminToken, async (req, res) => {
   const payload = req.body || {};
   const allowedKeys = ["tiers", "entries", "results", "bonus", "settings"];
   const hasAny = allowedKeys.some((k) => Object.prototype.hasOwnProperty.call(payload, k));
@@ -283,7 +351,7 @@ app.put("/api/state", async (req, res) => {
   }
 });
 
-app.get("/api/backups", async (_req, res) => {
+app.get("/api/backups", requireAdminToken, async (_req, res) => {
   try {
     return res.json(await listBackups());
   } catch (error) {
@@ -291,7 +359,7 @@ app.get("/api/backups", async (_req, res) => {
   }
 });
 
-app.get("/api/backups/:filename", async (req, res) => {
+app.get("/api/backups/:filename", requireAdminToken, async (req, res) => {
   if (!isSafeBackupName(req.params.filename)) {
     return res.status(400).json({ error: "Invalid backup filename" });
   }
@@ -309,7 +377,7 @@ app.get("/api/backups/:filename", async (req, res) => {
   }
 });
 
-app.post("/api/backups/restore/:filename", async (req, res) => {
+app.post("/api/backups/restore/:filename", requireAdminToken, async (req, res) => {
   if (!isSafeBackupName(req.params.filename)) {
     return res.status(400).json({ error: "Invalid backup filename" });
   }
@@ -338,4 +406,5 @@ app.listen(port, () => {
   } else {
     console.log("Email notifications: disabled (set RESEND_API_KEY env var to enable)");
   }
+  console.log(`Admin token: ${process.env.ADMIN_TOKEN ? "set via env var" : "using fallback default (set ADMIN_TOKEN env var for production)"}`);
 });

@@ -6,14 +6,16 @@
 // CONFIGURATION
 // =============================================================
 const STATE_API = '/api/state';
+const ENTRIES_API = '/api/entries';
+const ADMIN_VERIFY_API = '/api/admin/verify';
 const STORAGE = {
-    entries:  'wcSweep_entries',
-    results:  'wcSweep_results',
-    bonus:    'wcSweep_bonus',
-    settings: 'wcSweep_settings',
+    entries:    'wcSweep_entries',
+    results:    'wcSweep_results',
+    bonus:      'wcSweep_bonus',
+    settings:   'wcSweep_settings',
+    adminToken: 'wcSweep_adminToken',
 };
 const STORAGE_BACKUP_SUFFIX = '_backup';
-const ADMIN_PASSWORD = 'fifa2026';
 
 const TIER_MULTIPLIERS = { 1: 1, 2: 1.5, 3: 2, 4: 4 };
 const TIER_LABELS = { 1: 'Group 1 (×1)', 2: 'Group 2 (×1.5)', 3: 'Group 3 (×2)', 4: 'Group 4 (×4)' };
@@ -58,6 +60,22 @@ let adminMode      = false;
 
 function useServerStorage() {
     return window.location.protocol !== 'file:';
+}
+
+function getAdminToken() {
+    try { return localStorage.getItem(STORAGE.adminToken) || ''; } catch (_) { return ''; }
+}
+function setAdminToken(token) {
+    try { localStorage.setItem(STORAGE.adminToken, token); } catch (_) {}
+}
+function clearAdminToken() {
+    try { localStorage.removeItem(STORAGE.adminToken); } catch (_) {}
+}
+function adminHeaders(extra) {
+    const t = getAdminToken();
+    const h = Object.assign({}, extra || {});
+    if (t) h['X-Admin-Token'] = t;
+    return h;
 }
 
 // =============================================================
@@ -124,12 +142,22 @@ async function persistToServer(partial) {
     try {
         const res = await fetch(STATE_API, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: adminHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify(partial),
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+            const detail = await res.text().catch(() => '');
+            throw new Error(`HTTP ${res.status} ${detail.slice(0, 200)}`);
+        }
     } catch (e) {
         console.warn('Server persist failed:', e);
+        if (e.message && e.message.startsWith('HTTP 401')) {
+            alert('Admin session expired. Please re-enter the admin password.');
+            adminMode = false;
+            clearAdminToken();
+            document.body.classList.remove('admin-active');
+            document.getElementById('adminToggle').classList.remove('active');
+        }
     }
 }
 
@@ -248,7 +276,7 @@ function populatePickSelects() {
 
 function setupEntryForm() {
     const form = document.getElementById('teamForm');
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', async e => {
         e.preventDefault();
         const entrant = document.getElementById('entrantName').value.trim();
         const team = document.getElementById('teamName').value.trim();
@@ -259,7 +287,7 @@ function setupEntryForm() {
             document.getElementById('pickTier4').value,
         ];
         if (!entrant || !team || picks.some(p => !p)) {
-            alert('Please complete your name, team name, and all four tier picks.');
+            alert('Please complete your name, team name, and all four group picks.');
             return;
         }
         const bonusAnswers = {
@@ -271,16 +299,30 @@ function setupEntryForm() {
             alert('Please answer all three bonus questions.');
             return;
         }
-        entries.push({
-            id: cryptoRandomId(),
-            entrant, team, picks, bonusAnswers,
-            createdAt: Date.now(),
-        });
-        persistAll();
-        form.reset();
-        renderEntriesList();
-        renderLeaderboard();
-        flashToast(`Entry "${team}" submitted.`);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting…'; }
+        try {
+            const res = await fetch(ENTRIES_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ entrant, team, picks, bonusAnswers }),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || `HTTP ${res.status}`);
+            }
+            await loadFromServer();
+            form.reset();
+            populatePickSelects();
+            renderEntriesList();
+            renderLeaderboard();
+            if (activeTab === 'analytics') renderAnalytics();
+            flashToast(`Entry "${team}" submitted.`);
+        } catch (err) {
+            alert(`Failed to submit entry: ${err.message}`);
+        } finally {
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Team'; }
+        }
     });
 }
 
@@ -578,6 +620,7 @@ function setupAdmin() {
     document.getElementById('adminToggle').addEventListener('click', () => {
         if (adminMode) {
             adminMode = false;
+            clearAdminToken();
             document.body.classList.remove('admin-active');
             document.getElementById('adminToggle').classList.remove('active');
             renderEntriesList();
@@ -590,9 +633,22 @@ function setupAdmin() {
     });
 }
 
-window.confirmAdminPassword = function () {
+window.confirmAdminPassword = async function () {
     const val = document.getElementById('adminPwInput').value;
-    if (val === ADMIN_PASSWORD) {
+    if (!val) {
+        document.getElementById('adminPwError').style.display = 'block';
+        return;
+    }
+    try {
+        const res = await fetch(ADMIN_VERIFY_API, {
+            method: 'POST',
+            headers: { 'X-Admin-Token': val },
+        });
+        if (!res.ok) {
+            document.getElementById('adminPwError').style.display = 'block';
+            return;
+        }
+        setAdminToken(val);
         adminMode = true;
         document.body.classList.add('admin-active');
         document.getElementById('adminToggle').classList.add('active');
@@ -600,7 +656,8 @@ window.confirmAdminPassword = function () {
         renderEntriesList();
         renderBonusAdminForm();
         renderSnapshotList();
-    } else {
+    } catch (e) {
+        document.getElementById('adminPwError').textContent = 'Verification failed: ' + e.message;
         document.getElementById('adminPwError').style.display = 'block';
     }
 };
@@ -665,7 +722,7 @@ async function renderSnapshotList() {
     if (!root) return;
     root.innerHTML = '<p class="empty-cell" style="padding:8px">Loading...</p>';
     try {
-        const res = await fetch('/api/backups');
+        const res = await fetch('/api/backups', { headers: adminHeaders() });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const list = await res.json();
         if (countEl) countEl.textContent = `${list.length} snapshot${list.length === 1 ? '' : 's'}`;
@@ -683,7 +740,7 @@ async function renderSnapshotList() {
                     <span class="snapshot-entries">${entriesLabel}</span>
                 </div>
                 <div class="snapshot-actions">
-                    <a class="btn btn-small btn-export" href="/api/backups/${encodeURIComponent(s.filename)}" download>&#8659;</a>
+                    <button class="btn btn-small btn-export" onclick="downloadSnapshot('${escapeAttr(s.filename)}')" title="Download">&#8659;</button>
                     <button class="btn btn-small btn-restore" onclick="restoreSnapshot('${escapeAttr(s.filename)}')">Restore</button>
                 </div>
             </div>`;
@@ -693,10 +750,26 @@ async function renderSnapshotList() {
     }
 }
 
+window.downloadSnapshot = async function (filename) {
+    try {
+        const res = await fetch(`/api/backups/${encodeURIComponent(filename)}`, { headers: adminHeaders() });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        alert('Download failed: ' + e.message);
+    }
+};
+
 window.restoreSnapshot = async function (filename) {
     if (!confirm(`Restore from ${filename}? This will overwrite ALL current entries, results, and bonus answers.\n\nA fresh snapshot will be saved of the current state first.`)) return;
     try {
-        const res = await fetch(`/api/backups/restore/${encodeURIComponent(filename)}`, { method: 'POST' });
+        const res = await fetch(`/api/backups/restore/${encodeURIComponent(filename)}`, { method: 'POST', headers: adminHeaders() });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         await loadFromServer();
         populatePickSelects();
@@ -898,6 +971,21 @@ async function init() {
     setupEntryForm();
     setupResultsEditor();
     setupSnapshotPanel();
+    // Restore admin mode if a stored token is still valid
+    if (useServerStorage() && getAdminToken()) {
+        try {
+            const r = await fetch(ADMIN_VERIFY_API, { method: 'POST', headers: adminHeaders() });
+            if (r.ok) {
+                adminMode = true;
+                document.body.classList.add('admin-active');
+                document.getElementById('adminToggle').classList.add('active');
+                renderBonusAdminForm();
+                renderSnapshotList();
+            } else {
+                clearAdminToken();
+            }
+        } catch (_) { /* ignore */ }
+    }
     document.getElementById('refreshBtn').addEventListener('click', async () => {
         await loadFromServer();
         populatePickSelects();
