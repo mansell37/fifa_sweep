@@ -417,9 +417,9 @@ function pickCell(teamName, tier) {
                 ${thirdChip}
             </div>
             <div class="wdl-inline" title="W = all wins (3 pts each), D = group draws (1 pt), L = group losses">
-                <span class="wdl-chip wdl-w">W&nbsp;${totalWins}</span>
-                <span class="wdl-chip wdl-d">D&nbsp;${r.groupD || 0}</span>
-                <span class="wdl-chip wdl-l">L&nbsp;${r.groupL || 0}</span>
+                <span class="wdl-chip wdl-w">W${totalWins}</span>
+                <span class="wdl-chip wdl-d">D${r.groupD || 0}</span>
+                <span class="wdl-chip wdl-l">L${r.groupL || 0}</span>
             </div>
             <div class="pick-scaled" title="${raw} &times; ${mult}">${formatPts(scaled)}</div>
         </div>
