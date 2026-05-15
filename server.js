@@ -10,6 +10,10 @@ const BACKUP_DIR = path.join(DATA_DIR, "backups");
 const BACKUP_KEEP = 50;
 const BACKUP_FILE_RE = /^state-\d{8}-\d{6}(?:-\d{3})?\.json$/;
 
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const BACKUP_EMAIL = process.env.BACKUP_EMAIL || "matt.ansell1@nab.com.au";
+const BACKUP_FROM_EMAIL = process.env.BACKUP_FROM_EMAIL || "WC Sweep <onboarding@resend.dev>";
+
 const DEFAULT_STATE = {
   tiers: { 1: [], 2: [], 3: [], 4: [] },
   entries: [],
@@ -138,6 +142,100 @@ function isSafeBackupName(name) {
   return typeof name === "string" && BACKUP_FILE_RE.test(name);
 }
 
+// --- Email notifications via Resend -------------------------------------
+function escHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+const GROUP_LABELS = { 1: "Group 1 (×1)", 2: "Group 2 (×1.5)", 3: "Group 3 (×2)", 4: "Group 4 (×4)" };
+
+function entryEmailHtml(entry, state) {
+  const a = entry.bonusAnswers || {};
+  const picks = (entry.picks || []).map((p, i) =>
+    `<tr><td style="padding:4px 8px;background:#f3f4f6;font-weight:600">${escHtml(GROUP_LABELS[i + 1])}</td><td style="padding:4px 8px">${escHtml(p || "—")}</td></tr>`
+  ).join("");
+  const submitted = new Date(entry.createdAt || Date.now()).toUTCString();
+  return `<div style="font-family:Inter,Arial,sans-serif;max-width:600px;color:#111">
+    <h2 style="color:#0a1a3a;margin:0 0 12px">New World Cup Sweep entry</h2>
+    <p style="margin:0 0 8px"><strong>Entrant:</strong> ${escHtml(entry.entrant)}<br>
+       <strong>Team name:</strong> ${escHtml(entry.team)}<br>
+       <strong>Submitted (UTC):</strong> ${escHtml(submitted)}</p>
+    <h3 style="color:#0a1a3a;margin:16px 0 6px">Picks</h3>
+    <table style="border-collapse:collapse;font-size:14px">${picks}</table>
+    <h3 style="color:#0a1a3a;margin:16px 0 6px">Bonus answers</h3>
+    <p style="margin:0">
+      &gt;290 goals (104 matches): <strong>${escHtml(a.goalsOver250 || "—")}</strong><br>
+      Penalty shootouts (knockout): <strong>${escHtml(a.penaltyShootouts ?? "—")}</strong><br>
+      Red cards (whole tournament): <strong>${escHtml(a.redCards ?? "—")}</strong>
+    </p>
+    <p style="margin-top:18px;color:#4b5563">Total entries now: <strong>${state.entries.length}</strong></p>
+    <hr style="border:0;border-top:1px solid #e5e7eb;margin:20px 0">
+    <p style="color:#6b7280;font-size:12px;margin:0">Full state JSON is attached for backup. This is an automated notification from the WC Sweep app.</p>
+  </div>`;
+}
+
+function entryEmailText(entry, state) {
+  const a = entry.bonusAnswers || {};
+  const picks = (entry.picks || []).map((p, i) => `  ${GROUP_LABELS[i + 1]}: ${p || "—"}`).join("\n");
+  return `New World Cup Sweep entry
+
+Entrant: ${entry.entrant}
+Team name: ${entry.team}
+Submitted (UTC): ${new Date(entry.createdAt || Date.now()).toUTCString()}
+
+Picks:
+${picks}
+
+Bonus answers:
+  >290 goals (104 matches): ${a.goalsOver250 || "—"}
+  Penalty shootouts (knockout): ${a.penaltyShootouts ?? "—"}
+  Red cards (whole tournament): ${a.redCards ?? "—"}
+
+Total entries now: ${state.entries.length}
+
+Full state JSON is attached for backup.`;
+}
+
+async function sendEntryEmail(entry, state) {
+  if (!RESEND_API_KEY) return { skipped: "no API key" };
+  const stateJson = JSON.stringify(state, null, 2);
+  const attachmentName = `wc-sweep-state-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}.json`;
+  const recipients = BACKUP_EMAIL.split(",").map((s) => s.trim()).filter(Boolean);
+  const payload = {
+    from: BACKUP_FROM_EMAIL,
+    to: recipients,
+    subject: `New WC Sweep Entry: ${entry.team} · ${entry.entrant} (#${state.entries.length})`,
+    html: entryEmailHtml(entry, state),
+    text: entryEmailText(entry, state),
+    attachments: [{ filename: attachmentName, content: Buffer.from(stateJson).toString("base64") }],
+  };
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`Resend HTTP ${res.status}: ${errText.slice(0, 300)}`);
+  }
+  return { sent: true };
+}
+
+async function notifyNewEntries(prevState, nextState) {
+  if (!RESEND_API_KEY) return;
+  const prevIds = new Set((prevState.entries || []).map((e) => e.id));
+  const newEntries = (nextState.entries || []).filter((e) => e && e.id && !prevIds.has(e.id));
+  if (newEntries.length === 0) return;
+  for (const entry of newEntries) {
+    try {
+      const result = await sendEntryEmail(entry, nextState);
+      if (result.sent) console.log(`Emailed new-entry notification for ${entry.id}`);
+    } catch (err) {
+      console.warn(`Email notify failed for ${entry.id}:`, err.message);
+    }
+  }
+}
+
 function enqueueWrite(task) {
   writeQueue = writeQueue.then(task, task);
   return writeQueue;
@@ -165,7 +263,7 @@ app.put("/api/state", async (req, res) => {
   }
 
   try {
-    const updated = await enqueueWrite(async () => {
+    const { updated, previous } = await enqueueWrite(async () => {
       const current = await readState();
       const merged = {
         tiers: Object.prototype.hasOwnProperty.call(payload, "tiers") ? payload.tiers : current.tiers,
@@ -174,8 +272,11 @@ app.put("/api/state", async (req, res) => {
         bonus: Object.prototype.hasOwnProperty.call(payload, "bonus") ? payload.bonus : current.bonus,
         settings: Object.prototype.hasOwnProperty.call(payload, "settings") ? payload.settings : current.settings,
       };
-      return writeState(merged);
+      const next = await writeState(merged);
+      return { updated: next, previous: current };
     });
+    // Fire-and-forget: don't block the response on email delivery.
+    notifyNewEntries(previous, updated).catch((e) => console.warn("notifyNewEntries crashed:", e.message));
     return res.json(updated);
   } catch (error) {
     return res.status(500).json({ error: "Failed to persist state", detail: String(error) });
@@ -232,4 +333,9 @@ app.get("*", (_req, res) => {
 
 app.listen(port, () => {
   console.log(`World Cup Sweep running on port ${port}`);
+  if (RESEND_API_KEY) {
+    console.log(`Email notifications: enabled (to=${BACKUP_EMAIL}, from=${BACKUP_FROM_EMAIL})`);
+  } else {
+    console.log("Email notifications: disabled (set RESEND_API_KEY env var to enable)");
+  }
 });
