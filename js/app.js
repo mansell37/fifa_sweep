@@ -16,7 +16,7 @@ const STORAGE_BACKUP_SUFFIX = '_backup';
 const ADMIN_PASSWORD = 'fifa2026';
 
 const TIER_MULTIPLIERS = { 1: 1, 2: 1.5, 3: 2, 4: 4 };
-const TIER_LABELS = { 1: 'Tier 1 (×1)', 2: 'Tier 2 (×1.5)', 3: 'Tier 3 (×2)', 4: 'Tier 4 (×4)' };
+const TIER_LABELS = { 1: 'Group 1 (×1)', 2: 'Group 2 (×1.5)', 3: 'Group 3 (×2)', 4: 'Group 4 (×4)' };
 
 // 48-team roster from ESPN/DraftKings outright odds, early April 2026.
 const DEFAULT_TIERS = {
@@ -229,7 +229,6 @@ function activateTab(tab) {
     if (tab === 'sweep') renderLeaderboard();
     if (tab === 'tiers') renderTiers();
     if (tab === 'rules') renderRulesBonus();
-    if (tab === 'detail') renderDetail();
     if (tab === 'analytics') renderAnalytics();
 }
 
@@ -348,21 +347,19 @@ function pickCell(teamName, tier) {
     const raw = teamRawPoints(teamName);
     const mult = TIER_MULTIPLIERS[tier];
     const scaled = raw * mult;
-    const koRoundsWon = KO_ROUNDS.filter(rd => r[rd.key]);
-    const koLabels = koRoundsWon.map(rd => rd.label);
-    if (r.thirdPlace) koLabels.push('3rd');
-    const koChip = koLabels.length
-        ? `<span class="ko-chip" title="Knockout rounds won">${koLabels.join('·')}</span>`
+    const koWins = KO_ROUNDS.filter(rd => r[rd.key]).length;
+    const totalWins = (r.groupW || 0) + koWins;
+    const thirdChip = r.thirdPlace
+        ? `<span class="ko-chip" title="3rd-place playoff winner (+1)">3rd</span>`
         : '';
-    const totalW = (r.groupW || 0) + koRoundsWon.length;
     return `<td class="pick-cell">
         <div class="pick-row">
             <div class="pick-team-block">
                 <span class="pick-team">${escapeHtml(teamName)}</span>
-                ${koChip}
+                ${thirdChip}
             </div>
-            <div class="wdl-inline" title="Wins (incl. KO) / Draws / Losses">
-                <span class="wdl-chip wdl-w">W&nbsp;${totalW}</span>
+            <div class="wdl-inline" title="W = all wins (3 pts each), D = group draws (1 pt), L = group losses">
+                <span class="wdl-chip wdl-w">W&nbsp;${totalWins}</span>
                 <span class="wdl-chip wdl-d">D&nbsp;${r.groupD || 0}</span>
                 <span class="wdl-chip wdl-l">L&nbsp;${r.groupL || 0}</span>
             </div>
@@ -417,7 +414,7 @@ function renderTiers() {
     grid.innerHTML = [1, 2, 3, 4].map(t => `
         <div class="tier-card tier-${t}">
             <div class="tier-card-header">
-                <span>Tier ${t} — ${tiers[t].length} teams</span>
+                <span>Group ${t} — ${tiers[t].length} teams</span>
                 <span class="mult-badge">×${TIER_MULTIPLIERS[t]}</span>
             </div>
             <div class="tier-card-body">
@@ -450,71 +447,6 @@ function renderRulesBonus() {
 }
 
 // =============================================================
-// RENDER: DETAIL TAB
-// =============================================================
-function renderDetail() {
-    const root = document.getElementById('detailContent');
-    if (entries.length === 0) {
-        root.innerHTML = `<p class="empty-cell" style="padding:20px">No entries yet.</p>`;
-        return;
-    }
-    const ranked = entries.map(en => ({ en, total: entryTotal(en) }))
-        .sort((a, b) => b.total - a.total);
-
-    root.innerHTML = ranked.map(({ en, total }, idx) => {
-        const rows = [0, 1, 2, 3].map(i => {
-            const team = en.picks[i];
-            const tier = i + 1;
-            const raw = teamRawPoints(team);
-            const r = teamRecord(team);
-            const koRoundsWon = KO_ROUNDS.filter(rd => r[rd.key]);
-            const koLabels = koRoundsWon.map(rd => rd.label).join(', ') || '—';
-            const totalW = (r.groupW || 0) + koRoundsWon.length;
-            const wdlRec = `${totalW}W ${r.groupD || 0}D ${r.groupL || 0}L`;
-            const scaled = raw * TIER_MULTIPLIERS[tier];
-            return `<tr>
-                <td>Tier ${tier} (×${TIER_MULTIPLIERS[tier]})</td>
-                <td><strong>${escapeHtml(team || '—')}</strong></td>
-                <td>${wdlRec}</td>
-                <td>${koLabels}${r.thirdPlace ? ' + 3rd' : ''}</td>
-                <td>${raw}</td>
-                <td class="pick-total">${formatPts(scaled)}</td>
-            </tr>`;
-        }).join('');
-
-        const bonusTags = BONUS_QUESTIONS.map(q => {
-            const guess = en.bonusAnswers?.[q.key];
-            const correct = bonus[q.key];
-            let cls = 'bonus-tag';
-            if (correct !== '' && correct != null && guess !== '' && guess != null) {
-                cls += (String(guess) === String(correct)) ? ' correct' : ' wrong';
-            }
-            return `<span class="${cls}">${q.short}: ${escapeHtml(String(guess ?? '—'))}</span>`;
-        }).join('');
-
-        return `<div class="detail-entry-card">
-            <div class="detail-entry-head">
-                <div class="name-block">
-                    <div class="team">${escapeHtml(en.team)}</div>
-                    <div class="entrant">${escapeHtml(en.entrant)} · rank #${idx + 1}</div>
-                </div>
-                <div class="total-block">${formatPts(total)} pts</div>
-            </div>
-            <table class="detail-picks-table">
-                <thead>
-                    <tr><th>Tier</th><th>Team</th><th>W-D-L</th><th>KO Rounds Won</th><th>Raw</th><th style="text-align:right">Scaled</th></tr>
-                </thead>
-                <tbody>${rows}</tbody>
-            </table>
-            <div class="detail-bonus-row">
-                ${bonusTags}
-                <span class="bonus-tag" style="margin-left:auto;font-weight:700;color:var(--wc-pitch)">Bonus total: +${bonusPointsFor(en)}</span>
-            </div>
-        </div>`;
-    }).join('');
-}
-
-// =============================================================
 // RENDER: ANALYTICS TAB
 // =============================================================
 function renderAnalytics() {
@@ -523,27 +455,72 @@ function renderAnalytics() {
         root.innerHTML = `<p class="empty-cell" style="padding:20px">No entries yet.</p>`;
         return;
     }
+
+    // --- Field overview ---
+    const totals = entries.map(en => entryTotal(en)).sort((a, b) => a - b);
+    const sum = totals.reduce((s, v) => s + v, 0);
+    const avg = sum / totals.length;
+    const median = totals.length % 2 === 0
+        ? (totals[totals.length / 2 - 1] + totals[totals.length / 2]) / 2
+        : totals[Math.floor(totals.length / 2)];
+    const max = totals[totals.length - 1];
+    const min = totals[0];
+
+    // --- Pick popularity per group ---
     const tierCounts = { 1: {}, 2: {}, 3: {}, 4: {} };
     for (const en of entries) {
         for (let i = 0; i < 4; i++) {
             const team = en.picks[i];
             if (!team) continue;
-            const t = i + 1;
-            tierCounts[t][team] = (tierCounts[t][team] || 0) + 1;
+            tierCounts[i + 1][team] = (tierCounts[i + 1][team] || 0) + 1;
         }
     }
-    const totals = entries.map(en => entryTotal(en));
-    const avg = totals.reduce((s, v) => s + v, 0) / totals.length;
-    const max = Math.max(...totals);
-    const min = Math.min(...totals);
+
+    // --- Top scoring teams in the tournament (by raw points) ---
+    const teamScores = Object.entries(results)
+        .map(([team, _r]) => ({ team, raw: teamRawPoints(team), tier: tierOf(team) }))
+        .filter(t => t.raw > 0)
+        .sort((a, b) => b.raw - a.raw)
+        .slice(0, 8);
+
+    // --- Bonus consensus ---
+    let goalsY = 0, goalsN = 0;
+    const shootouts = [];
+    const reds = [];
+    for (const en of entries) {
+        const a = en.bonusAnswers || {};
+        if (a.goalsOver250 === 'Y') goalsY++;
+        else if (a.goalsOver250 === 'N') goalsN++;
+        if (a.penaltyShootouts !== '' && a.penaltyShootouts != null) shootouts.push(Number(a.penaltyShootouts));
+        if (a.redCards !== '' && a.redCards != null) reds.push(Number(a.redCards));
+    }
+    const numOrDash = arr => arr.length ? (arr.reduce((s, v) => s + v, 0) / arr.length).toFixed(1) : '—';
+    const rangeOrDash = arr => arr.length ? `${Math.min(...arr)} – ${Math.max(...arr)}` : '—';
+
+    // --- Picks-still-alive per entry (team has won at least one KO round) ---
+    const aliveCounts = entries.map(en => {
+        let alive = 0;
+        for (const team of en.picks) {
+            const r = teamRecord(team);
+            if (KO_ROUNDS.some(rd => r[rd.key])) alive++;
+        }
+        return { team: en.team, entrant: en.entrant, alive };
+    }).sort((a, b) => b.alive - a.alive || a.team.localeCompare(b.team));
 
     const tierBlocks = [1, 2, 3, 4].map(t => {
         const sorted = Object.entries(tierCounts[t]).sort((a, b) => b[1] - a[1]);
-        const top = sorted.slice(0, 6);
+        const top = sorted.slice(0, 8);
+        const maxN = top.length ? top[0][1] : 1;
         return `<div class="analytics-card">
-            <h3>Tier ${t} most-picked</h3>
+            <h3>Group ${t} most-picked <span class="mult-mini">×${TIER_MULTIPLIERS[t]}</span></h3>
             ${top.length === 0 ? '<div class="empty-cell">No picks</div>' :
-                top.map(([team, n]) => `<div class="analytics-stat-row"><span>${escapeHtml(team)}</span><span class="stat-val">${n}</span></div>`).join('')}
+                top.map(([team, n]) => `
+                    <div class="pick-bar-row">
+                        <span class="pick-bar-team">${escapeHtml(team)}</span>
+                        <div class="pick-bar"><div class="pick-bar-fill tier-fill-${t}" style="width:${(n / maxN) * 100}%"></div></div>
+                        <span class="pick-bar-val">${n}</span>
+                    </div>
+                `).join('')}
         </div>`;
     }).join('');
 
@@ -552,9 +529,44 @@ function renderAnalytics() {
             <h3>Field overview</h3>
             <div class="analytics-stat-row"><span>Total entries</span><span class="stat-val">${entries.length}</span></div>
             <div class="analytics-stat-row"><span>Average score</span><span class="stat-val">${formatPts(avg)}</span></div>
+            <div class="analytics-stat-row"><span>Median score</span><span class="stat-val">${formatPts(median)}</span></div>
             <div class="analytics-stat-row"><span>Top score</span><span class="stat-val">${formatPts(max)}</span></div>
             <div class="analytics-stat-row"><span>Lowest score</span><span class="stat-val">${formatPts(min)}</span></div>
+            <div class="analytics-stat-row"><span>Spread</span><span class="stat-val">${formatPts(max - min)} pts</span></div>
         </div>
+
+        <div class="analytics-card">
+            <h3>Top scoring teams in the tournament</h3>
+            ${teamScores.length === 0
+                ? '<div class="empty-cell">No tournament results entered yet</div>'
+                : teamScores.map(t => `
+                    <div class="analytics-stat-row">
+                        <span><span class="tier-pill tier-pill-${t.tier || 1}">G${t.tier || '?'}</span> ${escapeHtml(t.team)}</span>
+                        <span class="stat-val">${t.raw} pts</span>
+                    </div>
+                `).join('')}
+        </div>
+
+        <div class="analytics-card">
+            <h3>Bonus question consensus</h3>
+            <div class="analytics-stat-row"><span>&gt;250 goals: Yes vs No</span><span class="stat-val">${goalsY} / ${goalsN}</span></div>
+            <div class="analytics-stat-row"><span>Avg shootouts guess</span><span class="stat-val">${numOrDash(shootouts)}</span></div>
+            <div class="analytics-stat-row"><span>Shootouts range</span><span class="stat-val">${rangeOrDash(shootouts)}</span></div>
+            <div class="analytics-stat-row"><span>Avg red cards guess</span><span class="stat-val">${numOrDash(reds)}</span></div>
+            <div class="analytics-stat-row"><span>Red cards range</span><span class="stat-val">${rangeOrDash(reds)}</span></div>
+        </div>
+
+        <div class="analytics-card analytics-card-tall">
+            <h3>Picks still alive (in knockout)</h3>
+            <p class="analytics-hint">Number of an entrant's 4 picks that have won at least one knockout round.</p>
+            ${aliveCounts.slice(0, 14).map(e => `
+                <div class="analytics-stat-row">
+                    <span>${escapeHtml(e.team)} <span class="entrant-small">· ${escapeHtml(e.entrant)}</span></span>
+                    <span class="stat-val alive-val alive-${e.alive}">${e.alive} / 4</span>
+                </div>
+            `).join('')}
+        </div>
+
         ${tierBlocks}
     </div>`;
 }
@@ -764,7 +776,7 @@ window.importStateBackup = function (event) {
 };
 
 window.exportTiersCSV = function () {
-    const rows = [['Tier', 'Multiplier', 'Team']];
+    const rows = [['Group', 'Multiplier', 'Team']];
     for (let t = 1; t <= 4; t++) {
         for (const team of tiers[t]) rows.push([t, TIER_MULTIPLIERS[t], team]);
     }

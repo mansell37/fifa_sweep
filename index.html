@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Cup 2026 Sweepstake</title>
-    <link rel="stylesheet" href="css/style.css?v=4">
+    <link rel="stylesheet" href="css/style.css?v=5">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -18,9 +18,8 @@
             <nav class="nav-tabs" id="navTabs">
                 <button class="tab-btn active" data-tab="sweep">Leaderboard</button>
                 <button class="tab-btn admin-only" data-tab="enter">Enter Team</button>
-                <button class="tab-btn" data-tab="tiers">Tiers</button>
+                <button class="tab-btn" data-tab="tiers">Groups</button>
                 <button class="tab-btn" data-tab="rules">Rules &amp; Prizes</button>
-                <button class="tab-btn" data-tab="detail">Selections</button>
                 <button class="tab-btn" data-tab="analytics">Analytics</button>
             </nav>
             <div class="header-actions">
@@ -62,7 +61,7 @@
             <div class="two-col">
                 <div class="entry-panel">
                     <h2>Enter Your Team</h2>
-                    <p class="entry-hint">Pick one team from each of the 4 tiers, then answer the 3 bonus questions.</p>
+                    <p class="entry-hint">Pick one team from each of the 4 groups, then answer the 3 bonus questions.</p>
                     <form id="teamForm" autocomplete="off">
                         <div class="form-row">
                             <label for="entrantName">Your Name</label>
@@ -73,19 +72,19 @@
                             <input type="text" id="teamName" required placeholder="e.g. Three Lions Forever">
                         </div>
                         <div class="form-row">
-                            <label for="pickTier1">Tier 1 (&times;1)</label>
+                            <label for="pickTier1">Group 1 (&times;1)</label>
                             <select id="pickTier1" required><option value="">-- Select --</option></select>
                         </div>
                         <div class="form-row">
-                            <label for="pickTier2">Tier 2 (&times;1.5)</label>
+                            <label for="pickTier2">Group 2 (&times;1.5)</label>
                             <select id="pickTier2" required><option value="">-- Select --</option></select>
                         </div>
                         <div class="form-row">
-                            <label for="pickTier3">Tier 3 (&times;2)</label>
+                            <label for="pickTier3">Group 3 (&times;2)</label>
                             <select id="pickTier3" required><option value="">-- Select --</option></select>
                         </div>
                         <div class="form-row">
-                            <label for="pickTier4">Tier 4 (&times;4)</label>
+                            <label for="pickTier4">Group 4 (&times;4)</label>
                             <select id="pickTier4" required><option value="">-- Select --</option></select>
                         </div>
                         <div class="bonus-section">
@@ -141,9 +140,9 @@
         <!-- ============ TIERS TAB ============ -->
         <section id="tab-tiers" class="tab-content">
             <div class="groups-header">
-                <h2>Team Tiers <span class="groups-locked-badge">&#128274; Locked</span></h2>
+                <h2>Team Groups <span class="groups-locked-badge">&#128274; Locked</span></h2>
                 <div class="groups-actions">
-                    <button class="btn btn-export" id="exportTiersBtn" onclick="exportTiersCSV()" title="Download tiers as CSV">Download CSV</button>
+                    <button class="btn btn-export" id="exportTiersBtn" onclick="exportTiersCSV()" title="Download groups as CSV">Download CSV</button>
                 </div>
             </div>
             <div class="groups-grid" id="tiersGrid"></div>
@@ -155,12 +154,12 @@
                 <div class="rules-card">
                     <div class="rules-card-header">RULES</div>
                     <ul class="rules-list">
-                        <li>Pick <strong>4 teams</strong> &mdash; one from each tier</li>
-                        <li><strong>Tier multipliers</strong> apply to all points scored by that team: Tier 1 &times;1, Tier 2 &times;1.5, Tier 3 &times;2, Tier 4 &times;4</li>
+                        <li>Pick <strong>4 teams</strong> &mdash; one from each group</li>
+                        <li><strong>Group multipliers</strong> apply to all points scored by that team: Group 1 &times;1, Group 2 &times;1.5, Group 3 &times;2, Group 4 &times;4</li>
                         <li><strong>Group stage:</strong> 3 pts per win, 1 per draw, 0 per loss (max 9)</li>
                         <li><strong>Knockout wins:</strong> +3 pts each for Round of 32, R16, QF, SF, Final (max 15)</li>
                         <li><strong>3rd-place playoff:</strong> +1 point</li>
-                        <li>Maximum per team: <strong>24 raw pts</strong> &times; tier multiplier</li>
+                        <li>Maximum per team: <strong>24 raw pts</strong> &times; group multiplier</li>
                         <li>Highest total wins. Entrant total = sum of all 4 picks' scores</li>
                     </ul>
                 </div>
@@ -179,16 +178,6 @@
                     <p class="bonus-rule-hint">Each correct answer = <strong>+5 bonus points</strong>. Exact match only.</p>
                     <div id="bonusQuestionsDisplay"></div>
                 </div>
-            </div>
-        </section>
-
-        <!-- ============ DETAIL TAB ============ -->
-        <section id="tab-detail" class="tab-content">
-            <div class="detail-header">
-                <h2>Selections &amp; Detailed Scoring</h2>
-            </div>
-            <div id="detailContent">
-                <p class="empty-cell" style="padding:20px">No entries yet.</p>
             </div>
         </section>
 
@@ -238,6 +227,6 @@
         <p>World Cup 2026 Sweepstake | <span id="footerUpdated">--</span></p>
     </footer>
 
-    <script src="js/app.js?v=4"></script>
+    <script src="js/app.js?v=5"></script>
 </body>
 </html>

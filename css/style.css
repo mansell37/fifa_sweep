@@ -690,7 +690,70 @@ body.admin-active .admin-only { display: revert; }
     border-bottom: 1px dashed var(--gray-200);
 }
 .analytics-stat-row:last-child { border-bottom: 0; }
-.analytics-stat-row .stat-val { font-weight: 700; color: var(--wc-crimson-deep); }
+.analytics-stat-row .stat-val { font-weight: 700; color: var(--wc-crimson-deep); white-space: nowrap; margin-left: 8px; }
+.analytics-stat-row span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.analytics-card h3 { display: flex; align-items: center; gap: 8px; }
+.analytics-card .mult-mini {
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--wc-gold);
+    color: var(--wc-navy-deep);
+    padding: 1px 6px;
+    border-radius: 999px;
+}
+.analytics-hint { font-size: 11px; color: var(--gray-500); margin-bottom: 6px; }
+.analytics-card-tall { grid-column: span 2; }
+@media (max-width: 700px) { .analytics-card-tall { grid-column: span 1; } }
+
+.entrant-small { color: var(--gray-500); font-size: 11px; }
+
+.tier-pill {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    color: white;
+    padding: 1px 6px;
+    border-radius: 999px;
+    margin-right: 4px;
+}
+.tier-pill-1 { background: var(--t1); }
+.tier-pill-2 { background: var(--t2); }
+.tier-pill-3 { background: var(--t3); }
+.tier-pill-4 { background: var(--t4); }
+
+.alive-val.alive-0 { color: var(--gray-400); }
+.alive-val.alive-1 { color: var(--amber-600); }
+.alive-val.alive-2 { color: var(--wc-pitch); }
+.alive-val.alive-3 { color: var(--wc-navy-mid); }
+.alive-val.alive-4 { color: var(--wc-crimson-deep); }
+
+.pick-bar-row {
+    display: grid;
+    grid-template-columns: minmax(80px, 1fr) minmax(60px, 2fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 12px;
+    border-bottom: 1px dashed var(--gray-200);
+}
+.pick-bar-row:last-child { border-bottom: 0; }
+.pick-bar-team { color: var(--gray-800); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick-bar {
+    background: var(--gray-100);
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+}
+.pick-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.2s ease;
+}
+.pick-bar-fill.tier-fill-1 { background: var(--t1); }
+.pick-bar-fill.tier-fill-2 { background: var(--t2); }
+.pick-bar-fill.tier-fill-3 { background: var(--t3); }
+.pick-bar-fill.tier-fill-4 { background: var(--t4); }
+.pick-bar-val { font-weight: 700; color: var(--gray-800); min-width: 20px; text-align: right; }
 
 /* ========================================
    MODALS
