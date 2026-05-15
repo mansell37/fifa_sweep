@@ -43,10 +43,10 @@ const KO_ROUNDS = [
 ];
 
 const BONUS_QUESTIONS = [
-    { key: 'goalsOver250', label: 'More than 290 goals in the tournament? (104 matches)', type: 'yn', short: '>290 goals' },
-    { key: 'penaltyShootouts', label: 'How many penalty shootouts in the knockout stage? (32 games)', type: 'num', short: 'Shootouts' },
-    { key: 'winnerEuropean', label: 'Will the tournament winner be a European team?', type: 'yn', short: 'European winner' },
-    { key: 'australiaThroughGroup', label: 'Will Australia make it out of the group stage?', type: 'yn', short: 'Aus through groups' },
+    { key: 'goalsOver250', label: 'More than 290 goals in the tournament? (104 matches)', type: 'yn', short: '>290 goals', col: '>290?' },
+    { key: 'penaltyShootouts', label: 'How many penalty shootouts in the knockout stage? (32 games)', type: 'num', short: 'Shootouts', col: 'Pens' },
+    { key: 'winnerEuropean', label: 'Will the tournament winner be a European team?', type: 'yn', short: 'European winner', col: 'Euro?' },
+    { key: 'australiaThroughGroup', label: 'Will Australia make it out of the group stage?', type: 'yn', short: 'Aus through groups', col: 'Aus?' },
 ];
 const BONUS_POINTS_PER_CORRECT = 3;
 
@@ -350,6 +350,10 @@ function renderLeaderboard() {
     countEl.textContent = `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`;
     lastUpdEl.textContent = new Date().toLocaleTimeString();
 
+    const bonusHeadCells = showBonusPicks
+        ? BONUS_QUESTIONS.map(q => `<th class="bonus-col-head">${escapeHtml(q.col)}</th>`).join('')
+        : '';
+
     head.innerHTML = `
         <tr>
             <th class="rank">#</th>
@@ -359,13 +363,16 @@ function renderLeaderboard() {
             <th>Team 3: (×2)</th>
             <th>Team 4: (×4)</th>
             <th>Team 5: (×6)</th>
+            ${bonusHeadCells}
             <th class="bonus-cell">Bonus</th>
             <th style="text-align:right">Total</th>
         </tr>
     `;
 
+    const totalCols = 9 + (showBonusPicks ? BONUS_QUESTIONS.length : 0);
+
     if (entries.length === 0) {
-        body.innerHTML = `<tr><td colspan="9" class="empty-cell">No entries yet. Go to "Enter Team" to add teams.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="${totalCols}" class="empty-cell">No entries yet. Go to "Enter Team" to add teams.</td></tr>`;
         return;
     }
 
@@ -374,28 +381,21 @@ function renderLeaderboard() {
 
     body.innerHTML = ranked.map(({ en, total }, idx) => {
         const rankClass = idx === 0 ? 'r1' : idx === 1 ? 'r2' : idx === 2 ? 'r3' : '';
-        const mainRow = `
+        const bonusCells = showBonusPicks
+            ? BONUS_QUESTIONS.map(q => bonusAnswerCell(en, q)).join('')
+            : '';
+        return `
             <tr>
                 <td class="rank ${rankClass}">${idx + 1}</td>
                 <td>
                     <div class="team-line"><span class="team-name">${escapeHtml(en.team)}</span><span class="team-sep">·</span><span class="entrant-name">${escapeHtml(en.entrant)}</span></div>
                 </td>
                 ${[0, 1, 2, 3, 4].map(i => pickCell(en.picks[i], i + 1)).join('')}
+                ${bonusCells}
                 <td class="bonus-cell">${bonusPointsFor(en)}</td>
                 <td class="total">${formatPts(total)}</td>
             </tr>
         `;
-        const detailRow = showBonusPicks ? `
-            <tr class="bonus-detail-row">
-                <td></td>
-                <td colspan="8">
-                    <div class="bonus-picks-row">
-                        ${BONUS_QUESTIONS.map(q => bonusPickChip(en, q)).join('')}
-                    </div>
-                </td>
-            </tr>
-        ` : '';
-        return mainRow + detailRow;
     }).join('');
 }
 
@@ -431,24 +431,21 @@ function formatPts(n) {
     return n.toFixed(1);
 }
 
-function bonusPickChip(entry, q) {
+function bonusAnswerCell(entry, q) {
     const guess = entry.bonusAnswers?.[q.key];
     const correct = bonus[q.key];
     const guessLabel = guess === '' || guess == null ? '—' : String(guess);
-    let cls = 'bonus-pick';
-    let icon = '';
+    let cls = 'bonus-ans';
     if (guess === '' || guess == null) {
-        cls += ' missing';
+        cls += ' bonus-ans-missing';
     } else if (correct === '' || correct == null) {
-        cls += ' unknown';
+        cls += ' bonus-ans-unknown';
     } else if (String(guess) === String(correct)) {
-        cls += ' correct';
-        icon = '<span class="bonus-pick-icon">✓</span>';
+        cls += ' bonus-ans-correct';
     } else {
-        cls += ' wrong';
-        icon = '<span class="bonus-pick-icon">✕</span>';
+        cls += ' bonus-ans-wrong';
     }
-    return `<span class="${cls}"><span class="bonus-pick-label">${escapeHtml(q.short)}:</span> ${escapeHtml(guessLabel)}${icon}</span>`;
+    return `<td class="bonus-ans-cell"><span class="${cls}">${escapeHtml(guessLabel)}</span></td>`;
 }
 
 // =============================================================
