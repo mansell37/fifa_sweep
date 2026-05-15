@@ -48,7 +48,7 @@ npm start
 |---|---|---|---|
 | `ADMIN_TOKEN` | **recommended** | `fifa2026` | Token required for all admin write operations. Set this on Railway to override the default. |
 | `RESEND_API_KEY` | optional | _empty_ | Enables email notification on each new entry. Get from [resend.com](https://resend.com). |
-| `BACKUP_EMAIL` | optional | `matt.ansell1@nab.com.au` | Comma-separated recipient(s). |
+| `BACKUP_EMAIL` | optional | `matt.ansell93@gmail.com` | Comma-separated recipient(s). |
 | `BACKUP_FROM_EMAIL` | optional | `WC Sweep <onboarding@resend.dev>` | From address. The default works without verifying a domain, but Resend will only deliver to the email you signed up with. To send to other addresses, verify your own domain in Resend and update this to e.g. `WC Sweep <noreply@yourdomain.com>`. |
 | `DATA_SEED` | optional | _empty_ | One-time JSON blob to seed initial state. Used only when no `state.json` exists. |
 

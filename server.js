@@ -12,7 +12,7 @@ const BACKUP_KEEP = 50;
 const BACKUP_FILE_RE = /^state-\d{8}-\d{6}(?:-\d{3})?\.json$/;
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
-const BACKUP_EMAIL = process.env.BACKUP_EMAIL || "matt.ansell1@nab.com.au";
+const BACKUP_EMAIL = process.env.BACKUP_EMAIL || "matt.ansell93@gmail.com";
 const BACKUP_FROM_EMAIL = process.env.BACKUP_FROM_EMAIL || "WC Sweep <onboarding@resend.dev>";
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "fifa2026";
