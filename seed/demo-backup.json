@@ -2,85 +2,85 @@
   "entries": [
     {
       "id": "demo_01", "entrant": "Matt Ansell", "team": "Hoof It Long",
-      "picks": ["Spain", "Argentina", "Morocco", "Scotland"],
+      "picks": ["Spain", "Argentina", "Morocco", "Scotland", "Cape Verde"],
       "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "4", "redCards": "11" },
       "createdAt": 1747200000000
     },
     {
       "id": "demo_02", "entrant": "Joe Bloggs", "team": "Park The Bus",
-      "picks": ["France", "Portugal", "Japan", "Egypt"],
+      "picks": ["France", "Portugal", "Japan", "Egypt", "Saudi Arabia"],
       "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "3", "redCards": "8" },
       "createdAt": 1747200001000
     },
     {
       "id": "demo_03", "entrant": "Jane Doe", "team": "Tiki Taka",
-      "picks": ["England", "Germany", "USA", "Bosnia"],
+      "picks": ["England", "Germany", "USA", "Bosnia", "DR Congo"],
       "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "2", "redCards": "15" },
       "createdAt": 1747200002000
     },
     {
       "id": "demo_04", "entrant": "Alex Smith", "team": "Counter Press",
-      "picks": ["Brazil", "Netherlands", "Turkey", "Iran"],
+      "picks": ["Brazil", "Netherlands", "Turkey", "Iran", "New Zealand"],
       "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "5", "redCards": "10" },
       "createdAt": 1747200003000
     },
     {
       "id": "demo_05", "entrant": "Sam Taylor", "team": "Top Bins",
-      "picks": ["France", "Belgium", "Mexico", "Australia"],
+      "picks": ["France", "Belgium", "Mexico", "Australia", "Qatar"],
       "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "3", "redCards": "12" },
       "createdAt": 1747200004000
     },
     {
       "id": "demo_06", "entrant": "Pat Brown", "team": "Route One",
-      "picks": ["England", "Norway", "Croatia", "Paraguay"],
+      "picks": ["England", "Norway", "Croatia", "Paraguay", "Panama"],
       "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "4", "redCards": "9" },
       "createdAt": 1747200005000
     },
     {
       "id": "demo_07", "entrant": "Chris Jones", "team": "Cantona FC",
-      "picks": ["Spain", "Argentina", "Uruguay", "Ghana"],
+      "picks": ["Spain", "Argentina", "Uruguay", "Ghana", "Iraq"],
       "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "6", "redCards": "13" },
       "createdAt": 1747200006000
     },
     {
       "id": "demo_08", "entrant": "Dana White", "team": "Lampard Lounge",
-      "picks": ["Brazil", "Portugal", "Switzerland", "Saudi Arabia"],
+      "picks": ["Brazil", "Portugal", "Switzerland", "Tunisia", "Saudi Arabia"],
       "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "3", "redCards": "14" },
       "createdAt": 1747200007000
     },
     {
       "id": "demo_09", "entrant": "Robin Lee", "team": "Tackle Box",
-      "picks": ["France", "Germany", "Sweden", "South Korea"],
+      "picks": ["France", "Germany", "Sweden", "South Korea", "Uzbekistan"],
       "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "2", "redCards": "10" },
       "createdAt": 1747200008000
     },
     {
       "id": "demo_10", "entrant": "Casey Park", "team": "Goal Hangers",
-      "picks": ["England", "Netherlands", "Senegal", "Canada"],
+      "picks": ["England", "Netherlands", "Senegal", "Canada", "Jordan"],
       "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "5", "redCards": "11" },
       "createdAt": 1747200009000
     },
     {
       "id": "demo_11", "entrant": "Morgan Reed", "team": "Kick Off Kings",
-      "picks": ["Spain", "Norway", "Mexico", "Algeria"],
+      "picks": ["Spain", "Norway", "Mexico", "Algeria", "South Africa"],
       "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "4", "redCards": "12" },
       "createdAt": 1747200010000
     },
     {
       "id": "demo_12", "entrant": "Quinn Adams", "team": "Half Time Heroes",
-      "picks": ["Brazil", "Belgium", "Colombia", "Tunisia"],
+      "picks": ["Brazil", "Belgium", "Colombia", "Ivory Coast", "Haiti"],
       "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "3", "redCards": "16" },
       "createdAt": 1747200011000
     },
     {
       "id": "demo_13", "entrant": "Riley Chen", "team": "Boots & All",
-      "picks": ["France", "Argentina", "Japan", "Scotland"],
+      "picks": ["France", "Argentina", "Japan", "Scotland", "Curacao"],
       "bonusAnswers": { "goalsOver250": "Y", "penaltyShootouts": "5", "redCards": "9" },
       "createdAt": 1747200012000
     },
     {
       "id": "demo_14", "entrant": "Jordan Hall", "team": "Wonder Goal",
-      "picks": ["England", "Germany", "Morocco", "Cape Verde"],
+      "picks": ["England", "Germany", "Morocco", "Egypt", "Cape Verde"],
       "bonusAnswers": { "goalsOver250": "N", "penaltyShootouts": "4", "redCards": "11" },
       "createdAt": 1747200013000
     }
@@ -113,13 +113,24 @@
     "Australia":    { "groupW": 0, "groupD": 2, "groupL": 1, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
     "Paraguay":     { "groupW": 1, "groupD": 0, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
     "Ghana":        { "groupW": 0, "groupD": 1, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
-    "Saudi Arabia": { "groupW": 1, "groupD": 0, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "Tunisia":      { "groupW": 0, "groupD": 1, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
     "South Korea":  { "groupW": 1, "groupD": 1, "groupL": 1, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
     "Canada":       { "groupW": 0, "groupD": 2, "groupL": 1, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
     "Algeria":      { "groupW": 1, "groupD": 0, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
-    "Tunisia":      { "groupW": 0, "groupD": 1, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "Ivory Coast":  { "groupW": 1, "groupD": 1, "groupL": 1, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
     "Bosnia":       { "groupW": 0, "groupD": 0, "groupL": 3, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
-    "Cape Verde":   { "groupW": 1, "groupD": 0, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false }
+    "Cape Verde":   { "groupW": 1, "groupD": 0, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "Saudi Arabia": { "groupW": 1, "groupD": 0, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "DR Congo":     { "groupW": 0, "groupD": 1, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "South Africa": { "groupW": 1, "groupD": 1, "groupL": 1, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "New Zealand":  { "groupW": 0, "groupD": 1, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "Qatar":        { "groupW": 0, "groupD": 0, "groupL": 3, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "Panama":       { "groupW": 1, "groupD": 0, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "Iraq":         { "groupW": 0, "groupD": 1, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "Uzbekistan":   { "groupW": 1, "groupD": 0, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "Jordan":       { "groupW": 0, "groupD": 1, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "Haiti":        { "groupW": 0, "groupD": 0, "groupL": 3, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false },
+    "Curacao":      { "groupW": 1, "groupD": 0, "groupL": 2, "r32": false, "r16": false, "qf": false, "sf": false, "final": false, "thirdPlace": false }
   },
   "bonus": { "goalsOver250": "", "penaltyShootouts": "", "redCards": "" },
   "settings": {}

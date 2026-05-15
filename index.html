@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Cup 2026 Sweepstake</title>
-    <link rel="stylesheet" href="css/style.css?v=7">
+    <link rel="stylesheet" href="css/style.css?v=8">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -61,7 +61,7 @@
             <div class="two-col">
                 <div class="entry-panel">
                     <h2>Enter Your Team</h2>
-                    <p class="entry-hint">Pick one team from each of the 4 groups, then answer the 3 bonus questions.</p>
+                    <p class="entry-hint">Pick one team from each of the 5 groups, then answer the 3 bonus questions.</p>
                     <form id="teamForm" autocomplete="off">
                         <div class="form-row">
                             <label for="entrantName">Your Name</label>
@@ -86,6 +86,10 @@
                         <div class="form-row">
                             <label for="pickTier4">Group 4 (&times;4)</label>
                             <select id="pickTier4" required><option value="">-- Select --</option></select>
+                        </div>
+                        <div class="form-row">
+                            <label for="pickTier5">Group 5 (&times;6)</label>
+                            <select id="pickTier5" required><option value="">-- Select --</option></select>
                         </div>
                         <div class="bonus-section">
                             <h3>Bonus Questions <span class="bonus-points-badge">+5 pts each if correct</span></h3>
@@ -163,12 +167,12 @@
                 <div class="rules-card">
                     <div class="rules-card-header">RULES</div>
                     <ul class="rules-list">
-                        <li>Pick <strong>one team from each of the 4 groups</strong></li>
+                        <li>Pick <strong>one team from each of the 5 groups</strong></li>
                         <li><strong>3 pts</strong> per win (group stage, knockouts, and 3rd-place playoff)</li>
                         <li><strong>1 pt</strong> per group-stage draw</li>
-                        <li>Each team's total is multiplied by its <strong>group multiplier</strong>: Group 1 &times;1, Group 2 &times;1.5, Group 3 &times;2, Group 4 &times;4</li>
+                        <li>Each team's total is multiplied by its <strong>group multiplier</strong>: Group 1 &times;1, Group 2 &times;1.5, Group 3 &times;2, Group 4 &times;4, Group 5 &times;6</li>
                         <li>Maximum per team: <strong>24 raw pts</strong> &times; group multiplier</li>
-                        <li>Entrant total = sum of all 4 picks. Highest total wins.</li>
+                        <li>Entrant total = sum of all 5 picks. Highest total wins.</li>
                     </ul>
                 </div>
                 <div class="rules-card prize-card">
@@ -235,6 +239,6 @@
         <p>World Cup 2026 Sweepstake | <span id="footerUpdated">--</span></p>
     </footer>
 
-    <script src="js/app.js?v=7"></script>
+    <script src="js/app.js?v=8"></script>
 </body>
 </html>

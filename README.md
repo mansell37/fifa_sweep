@@ -4,9 +4,9 @@ Companion sweep app for the FIFA World Cup 2026. Static frontend + tiny Express 
 
 ## Format
 
-- 48 teams across 4 groups, ranked by outright odds (ESPN/DraftKings, early April 2026)
-- Each entrant picks **one team per group**
-- Group multipliers: **G1 ×1, G2 ×1.5, G3 ×2, G4 ×4**
+- 48 teams across 5 groups, ranked by outright odds (ESPN/DraftKings, early April 2026)
+- Each entrant picks **one team per group** (5 picks total)
+- Group multipliers: **G1 ×1, G2 ×1.5, G3 ×2, G4 ×4, G5 ×6**
 
 ### Scoring per team
 - **3 pts** per win (group stage, knockouts, and 3rd-place playoff)

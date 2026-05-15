@@ -43,6 +43,7 @@
     --t2: #1d3f8a; --t2-bg: #eef2fb; --t2-head: #122a5c;
     --t3: #059669; --t3-bg: #ecfdf5; --t3-head: #065f46;
     --t4: #d97706; --t4-bg: #fffbeb; --t4-head: #92400e;
+    --t5: #7c3aed; --t5-bg: #f5f3ff; --t5-head: #5b21b6;
 
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
     --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
@@ -204,7 +205,7 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
     background: linear-gradient(135deg, var(--wc-navy-deep), var(--wc-navy));
     color: white;
     text-align: left;
-    padding: 7px 10px;
+    padding: 7px 8px;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.3px;
@@ -214,7 +215,7 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
     border-bottom: 2px solid var(--wc-gold);
 }
 .sweep-table tbody td {
-    padding: 4px 10px;
+    padding: 4px 8px;
     border-bottom: 1px solid var(--gray-100);
     color: var(--gray-800);
     vertical-align: middle;
@@ -242,7 +243,7 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
     gap: 6px;
     white-space: nowrap;
     overflow: hidden;
-    max-width: 340px;
+    max-width: 200px;
     line-height: 1.2;
 }
 .sweep-table .team-sep { color: var(--gray-300); font-size: 11px; flex-shrink: 0; }
@@ -266,12 +267,12 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
 .sweep-table .pick-cell {
     font-size: 12px;
     line-height: 1.15;
-    min-width: 150px;
+    min-width: 130px;
 }
 .sweep-table .pick-cell .pick-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 .sweep-table .pick-cell .pick-team-block {
     min-width: 0;
@@ -293,10 +294,10 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
 .sweep-table .pick-cell .wdl-chip {
     font-size: 10px;
     font-weight: 700;
-    padding: 1px 5px;
+    padding: 1px 4px;
     border-radius: 3px;
     line-height: 1.4;
-    letter-spacing: 0.2px;
+    letter-spacing: 0;
 }
 .sweep-table .pick-cell .wdl-w { background: #dcfce7; color: #166534; }
 .sweep-table .pick-cell .wdl-d { background: #fef3c7; color: #92400e; }
@@ -557,6 +558,7 @@ body.admin-active .admin-only { display: revert; }
 .tier-card.tier-2 .tier-card-header { background: var(--t2); }
 .tier-card.tier-3 .tier-card-header { background: var(--t3); }
 .tier-card.tier-4 .tier-card-header { background: var(--t4); }
+.tier-card.tier-5 .tier-card-header { background: var(--t5); }
 .tier-card-body { padding: 8px 0; max-height: 480px; overflow-y: auto; }
 .tier-team-row {
     padding: 6px 14px;
@@ -750,12 +752,14 @@ body.admin-active .admin-only { display: revert; }
 .tier-pill-2 { background: var(--t2); }
 .tier-pill-3 { background: var(--t3); }
 .tier-pill-4 { background: var(--t4); }
+.tier-pill-5 { background: var(--t5); }
 
 .alive-val.alive-0 { color: var(--gray-400); }
 .alive-val.alive-1 { color: var(--amber-600); }
 .alive-val.alive-2 { color: var(--wc-pitch); }
 .alive-val.alive-3 { color: var(--wc-navy-mid); }
 .alive-val.alive-4 { color: var(--wc-crimson-deep); }
+.alive-val.alive-5 { color: var(--wc-crimson-deep); font-weight: 800; }
 
 .pick-bar-row {
     display: grid;
@@ -783,6 +787,7 @@ body.admin-active .admin-only { display: revert; }
 .pick-bar-fill.tier-fill-2 { background: var(--t2); }
 .pick-bar-fill.tier-fill-3 { background: var(--t3); }
 .pick-bar-fill.tier-fill-4 { background: var(--t4); }
+.pick-bar-fill.tier-fill-5 { background: var(--t5); }
 .pick-bar-val { font-weight: 700; color: var(--gray-800); min-width: 20px; text-align: right; }
 
 /* ========================================
@@ -853,6 +858,7 @@ body.admin-active .admin-only { display: revert; }
 .result-row.tier-2 .tier-tag { background: var(--t2); }
 .result-row.tier-3 .tier-tag { background: var(--t3); }
 .result-row.tier-4 .tier-tag { background: var(--t4); }
+.result-row.tier-5 .tier-tag { background: var(--t5); }
 .result-row .input-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

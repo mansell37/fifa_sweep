@@ -18,8 +18,23 @@ const BACKUP_FROM_EMAIL = process.env.BACKUP_FROM_EMAIL || "WC Sweep <onboarding
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "fifa2026";
 const ENTRY_FIELD_MAX = 80;
 
+const TIER_KEYS = [1, 2, 3, 4, 5];
+const PICK_COUNT = 5;
+
+// 48-team roster — must match DEFAULT_TIERS in js/app.js
+const DEFAULT_TIERS = {
+  1: ["Spain", "France", "England", "Brazil"],
+  2: ["Argentina", "Portugal", "Germany", "Netherlands", "Norway", "Belgium"],
+  3: ["Colombia", "Japan", "Morocco", "USA", "Uruguay", "Turkey", "Mexico", "Ecuador",
+      "Sweden", "Croatia", "Switzerland", "Austria", "Senegal", "Czechia"],
+  4: ["Canada", "Paraguay", "Scotland", "Ivory Coast", "Bosnia", "Egypt", "Iran", "Algeria",
+      "South Korea", "Ghana", "Australia", "Tunisia"],
+  5: ["DR Congo", "South Africa", "Saudi Arabia", "Panama", "Qatar", "New Zealand",
+      "Iraq", "Cape Verde", "Uzbekistan", "Jordan", "Haiti", "Curacao"],
+};
+
 const DEFAULT_STATE = {
-  tiers: { 1: [], 2: [], 3: [], 4: [] },
+  tiers: JSON.parse(JSON.stringify(DEFAULT_TIERS)),
   entries: [],
   results: {},
   bonus: { goalsOver250: "", penaltyShootouts: "", redCards: "" },
@@ -38,13 +53,13 @@ function safeStateShape(state) {
   const results = state.results && typeof state.results === "object" ? state.results : {};
   const bonus = state.bonus && typeof state.bonus === "object" ? state.bonus : { ...DEFAULT_STATE.bonus };
   const settings = state.settings && typeof state.settings === "object" ? state.settings : {};
+  const shapedTiers = {};
+  for (const t of TIER_KEYS) {
+    const raw = tiers[String(t)] ?? tiers[t];
+    shapedTiers[t] = Array.isArray(raw) ? [...raw] : [];
+  }
   return {
-    tiers: {
-      1: Array.isArray(tiers["1"] ?? tiers[1]) ? [...(tiers["1"] ?? tiers[1])] : [],
-      2: Array.isArray(tiers["2"] ?? tiers[2]) ? [...(tiers["2"] ?? tiers[2])] : [],
-      3: Array.isArray(tiers["3"] ?? tiers[3]) ? [...(tiers["3"] ?? tiers[3])] : [],
-      4: Array.isArray(tiers["4"] ?? tiers[4]) ? [...(tiers["4"] ?? tiers[4])] : [],
-    },
+    tiers: shapedTiers,
     entries,
     results,
     bonus: {
@@ -60,7 +75,8 @@ async function readState() {
   try {
     const raw = await fs.readFile(DATA_PATH, "utf8");
     const parsed = safeStateShape(JSON.parse(raw));
-    if (parsed.entries.length > 0 || (parsed.tiers[1].length + parsed.tiers[2].length + parsed.tiers[3].length + parsed.tiers[4].length) > 0) {
+    const tiersTotal = TIER_KEYS.reduce((s, t) => s + (parsed.tiers[t]?.length || 0), 0);
+    if (parsed.entries.length > 0 || tiersTotal > 0) {
       return parsed;
     }
   } catch (error) {
@@ -151,7 +167,7 @@ function escHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-const GROUP_LABELS = { 1: "Group 1 (×1)", 2: "Group 2 (×1.5)", 3: "Group 3 (×2)", 4: "Group 4 (×4)" };
+const GROUP_LABELS = { 1: "Group 1 (×1)", 2: "Group 2 (×1.5)", 3: "Group 3 (×2)", 4: "Group 4 (×4)", 5: "Group 5 (×6)" };
 
 function entryEmailHtml(entry, state) {
   const a = entry.bonusAnswers || {};
@@ -263,9 +279,9 @@ function validateEntryPayload(payload, currentTiers) {
   if (!entrant) return "entrant required";
   if (!team) return "team required";
   if (entrant.length > ENTRY_FIELD_MAX || team.length > ENTRY_FIELD_MAX) return "entrant/team too long";
-  if (!Array.isArray(payload.picks) || payload.picks.length !== 4) return "picks must be an array of 4 teams";
+  if (!Array.isArray(payload.picks) || payload.picks.length !== PICK_COUNT) return `picks must be an array of ${PICK_COUNT} teams`;
   const picks = payload.picks.map((p) => String(p || "").trim());
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < PICK_COUNT; i++) {
     const roster = currentTiers[i + 1] || currentTiers[String(i + 1)] || [];
     if (!picks[i]) return `Group ${i + 1} pick required`;
     if (!roster.includes(picks[i])) return `Pick "${picks[i]}" is not in Group ${i + 1}`;

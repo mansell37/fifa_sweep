@@ -17,8 +17,10 @@ const STORAGE = {
 };
 const STORAGE_BACKUP_SUFFIX = '_backup';
 
-const TIER_MULTIPLIERS = { 1: 1, 2: 1.5, 3: 2, 4: 4 };
-const TIER_LABELS = { 1: 'Group 1 (×1)', 2: 'Group 2 (×1.5)', 3: 'Group 3 (×2)', 4: 'Group 4 (×4)' };
+const TIER_MULTIPLIERS = { 1: 1, 2: 1.5, 3: 2, 4: 4, 5: 6 };
+const TIER_LABELS = { 1: 'Group 1 (×1)', 2: 'Group 2 (×1.5)', 3: 'Group 3 (×2)', 4: 'Group 4 (×4)', 5: 'Group 5 (×6)' };
+const TIER_KEYS = [1, 2, 3, 4, 5];
+const PICK_COUNT = 5;
 
 // 48-team roster from ESPN/DraftKings outright odds, early April 2026.
 const DEFAULT_TIERS = {
@@ -27,9 +29,9 @@ const DEFAULT_TIERS = {
     3: ['Colombia', 'Japan', 'Morocco', 'USA', 'Uruguay', 'Turkey', 'Mexico', 'Ecuador',
         'Sweden', 'Croatia', 'Switzerland', 'Austria', 'Senegal', 'Czechia'],
     4: ['Canada', 'Paraguay', 'Scotland', 'Ivory Coast', 'Bosnia', 'Egypt', 'Iran', 'Algeria',
-        'South Korea', 'Ghana', 'Australia', 'Tunisia', 'DR Congo', 'South Africa',
-        'Saudi Arabia', 'Panama', 'Qatar', 'New Zealand', 'Iraq', 'Cape Verde',
-        'Uzbekistan', 'Jordan', 'Haiti', 'Curacao'],
+        'South Korea', 'Ghana', 'Australia', 'Tunisia'],
+    5: ['DR Congo', 'South Africa', 'Saudi Arabia', 'Panama', 'Qatar', 'New Zealand',
+        'Iraq', 'Cape Verde', 'Uzbekistan', 'Jordan', 'Haiti', 'Curacao'],
 };
 
 const KO_ROUNDS = [
@@ -50,7 +52,7 @@ const BONUS_POINTS_PER_CORRECT = 5;
 // =============================================================
 // APPLICATION STATE
 // =============================================================
-let tiers          = JSON.parse(JSON.stringify(DEFAULT_TIERS));
+let tiers          = JSON.parse(JSON.stringify(DEFAULT_TIERS));  // { 1..5: [teamName, ...] }
 let entries        = [];
 let results        = {};   // teamName -> { groupW, groupD, groupL, r32, r16, qf, sf, final, thirdPlace }
 let bonus          = { goalsOver250: '', penaltyShootouts: '', redCards: '' };
@@ -109,12 +111,10 @@ async function loadFromServer() {
             const t1 = state.tiers[1] || state.tiers['1'] || [];
             // Only override defaults if server has a populated roster
             if ((t1.length + (state.tiers[2] || []).length) > 0) {
-                tiers = {
-                    1: state.tiers['1'] || state.tiers[1] || DEFAULT_TIERS[1],
-                    2: state.tiers['2'] || state.tiers[2] || DEFAULT_TIERS[2],
-                    3: state.tiers['3'] || state.tiers[3] || DEFAULT_TIERS[3],
-                    4: state.tiers['4'] || state.tiers[4] || DEFAULT_TIERS[4],
-                };
+                tiers = {};
+                for (const t of TIER_KEYS) {
+                    tiers[t] = state.tiers[String(t)] || state.tiers[t] || DEFAULT_TIERS[t];
+                }
             }
         }
         entries = Array.isArray(state.entries) ? normalizeEntries(state.entries) : [];
@@ -170,18 +170,22 @@ function persistAll() {
 }
 
 function normalizeEntries(arr) {
-    return arr.map(en => ({
+    return arr.map(en => {
+        const rawPicks = Array.isArray(en.picks) ? en.picks.slice(0, PICK_COUNT).map(p => `${p || ''}`) : [];
+        while (rawPicks.length < PICK_COUNT) rawPicks.push('');
+        return ({
         id: en.id || cryptoRandomId(),
         entrant: (en.entrant || '').trim(),
         team: (en.team || '').trim(),
-        picks: Array.isArray(en.picks) ? en.picks.slice(0, 4).map(p => `${p || ''}`) : ['', '', '', ''],
+        picks: rawPicks,
         bonusAnswers: isObject(en.bonusAnswers) ? {
             goalsOver250: en.bonusAnswers.goalsOver250 || '',
             penaltyShootouts: en.bonusAnswers.penaltyShootouts ?? '',
             redCards: en.bonusAnswers.redCards ?? '',
         } : { goalsOver250: '', penaltyShootouts: '', redCards: '' },
         createdAt: en.createdAt || Date.now(),
-    }));
+    });
+    });
 }
 
 function cryptoRandomId() {
@@ -211,7 +215,7 @@ function teamRawPoints(teamName) {
 }
 
 function tierOf(teamName) {
-    for (const t of [1, 2, 3, 4]) if (tiers[t].includes(teamName)) return t;
+    for (const t of TIER_KEYS) if (tiers[t] && tiers[t].includes(teamName)) return t;
     return null;
 }
 
@@ -234,7 +238,7 @@ function bonusPointsFor(entry) {
 
 function entryTotal(entry) {
     let total = 0;
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < PICK_COUNT; i++) {
         total += teamScaledPoints(entry.picks[i]);
     }
     total += bonusPointsFor(entry);
@@ -264,7 +268,7 @@ function activateTab(tab) {
 // ENTRY FORM
 // =============================================================
 function populatePickSelects() {
-    for (let t = 1; t <= 4; t++) {
+    for (const t of TIER_KEYS) {
         const sel = document.getElementById(`pickTier${t}`);
         if (!sel) continue;
         const current = sel.value;
@@ -280,14 +284,9 @@ function setupEntryForm() {
         e.preventDefault();
         const entrant = document.getElementById('entrantName').value.trim();
         const team = document.getElementById('teamName').value.trim();
-        const picks = [
-            document.getElementById('pickTier1').value,
-            document.getElementById('pickTier2').value,
-            document.getElementById('pickTier3').value,
-            document.getElementById('pickTier4').value,
-        ];
+        const picks = TIER_KEYS.map(t => document.getElementById(`pickTier${t}`).value);
         if (!entrant || !team || picks.some(p => !p)) {
-            alert('Please complete your name, team name, and all four group picks.');
+            alert('Please complete your name, team name, and all five group picks.');
             return;
         }
         const bonusAnswers = {
@@ -354,13 +353,14 @@ function renderLeaderboard() {
             <th>Team 2: (×1.5)</th>
             <th>Team 3: (×2)</th>
             <th>Team 4: (×4)</th>
+            <th>Team 5: (×6)</th>
             <th class="bonus-cell">Bonus</th>
             <th style="text-align:right">Total</th>
         </tr>
     `;
 
     if (entries.length === 0) {
-        body.innerHTML = `<tr><td colspan="8" class="empty-cell">No entries yet. Go to "Enter Team" to add teams.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="9" class="empty-cell">No entries yet. Go to "Enter Team" to add teams.</td></tr>`;
         return;
     }
 
@@ -375,7 +375,7 @@ function renderLeaderboard() {
                 <td>
                     <div class="team-line"><span class="team-name">${escapeHtml(en.team)}</span><span class="team-sep">·</span><span class="entrant-name">${escapeHtml(en.entrant)}</span></div>
                 </td>
-                ${[0, 1, 2, 3].map(i => pickCell(en.picks[i], i + 1)).join('')}
+                ${[0, 1, 2, 3, 4].map(i => pickCell(en.picks[i], i + 1)).join('')}
                 <td class="bonus-cell">${bonusPointsFor(en)}</td>
                 <td class="total">${formatPts(total)}</td>
             </tr>
@@ -453,7 +453,7 @@ function renderTiers() {
             pickCounts[p] = (pickCounts[p] || 0) + 1;
         }
     }
-    grid.innerHTML = [1, 2, 3, 4].map(t => `
+    grid.innerHTML = TIER_KEYS.map(t => `
         <div class="tier-card tier-${t}">
             <div class="tier-card-header">
                 <span>Group ${t} — ${tiers[t].length} teams</span>
@@ -509,9 +509,10 @@ function renderAnalytics() {
     const min = totals[0];
 
     // --- Pick popularity per group ---
-    const tierCounts = { 1: {}, 2: {}, 3: {}, 4: {} };
+    const tierCounts = {};
+    for (const t of TIER_KEYS) tierCounts[t] = {};
     for (const en of entries) {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < PICK_COUNT; i++) {
             const team = en.picks[i];
             if (!team) continue;
             tierCounts[i + 1][team] = (tierCounts[i + 1][team] || 0) + 1;
@@ -549,7 +550,9 @@ function renderAnalytics() {
         return { team: en.team, entrant: en.entrant, alive };
     }).sort((a, b) => b.alive - a.alive || a.team.localeCompare(b.team));
 
-    const tierBlocks = [1, 2, 3, 4].map(t => {
+    const aliveLabel = (n) => `${n} / ${PICK_COUNT}`;
+
+    const tierBlocks = TIER_KEYS.map(t => {
         const sorted = Object.entries(tierCounts[t]).sort((a, b) => b[1] - a[1]);
         const top = sorted.slice(0, 8);
         const maxN = top.length ? top[0][1] : 1;
@@ -600,11 +603,11 @@ function renderAnalytics() {
 
         <div class="analytics-card analytics-card-tall">
             <h3>Picks still alive (in knockout)</h3>
-            <p class="analytics-hint">Number of an entrant's 4 picks that have won at least one knockout round.</p>
+            <p class="analytics-hint">Number of an entrant's ${PICK_COUNT} picks that have won at least one knockout round.</p>
             ${aliveCounts.slice(0, 14).map(e => `
                 <div class="analytics-stat-row">
                     <span>${escapeHtml(e.team)} <span class="entrant-small">· ${escapeHtml(e.entrant)}</span></span>
-                    <span class="stat-val alive-val alive-${e.alive}">${e.alive} / 4</span>
+                    <span class="stat-val alive-val alive-${e.alive}">${aliveLabel(e.alive)}</span>
                 </div>
             `).join('')}
         </div>
@@ -798,12 +801,12 @@ function setupResultsEditor() {
 function openResultsModal() {
     const body = document.getElementById('resultsModalBody');
     const rows = [];
-    for (let t = 1; t <= 4; t++) {
+    for (const t of TIER_KEYS) {
         for (const team of tiers[t]) {
             const r = teamRecord(team);
             rows.push(`
                 <div class="result-row tier-${t}" data-team="${escapeAttr(team)}">
-                    <div class="team-name">${escapeHtml(team)}<span class="tier-tag">T${t}</span></div>
+                    <div class="team-name">${escapeHtml(team)}<span class="tier-tag">G${t}</span></div>
                     <div class="input-grid">
                         <div><label>W</label><input type="number" min="0" max="3" data-field="groupW" value="${r.groupW || 0}"></div>
                         <div><label>D</label><input type="number" min="0" max="3" data-field="groupD" value="${r.groupD || 0}"></div>
@@ -916,7 +919,7 @@ window.importStateBackup = function (event) {
 
 window.exportTiersCSV = function () {
     const rows = [['Group', 'Multiplier', 'Team']];
-    for (let t = 1; t <= 4; t++) {
+    for (const t of TIER_KEYS) {
         for (const team of tiers[t]) rows.push([t, TIER_MULTIPLIERS[t], team]);
     }
     const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
