@@ -26,7 +26,7 @@
     },
     {
       "id": "demo_05", "entrant": "Sam Taylor", "team": "Top Bins",
-      "picks": ["France", "Belgium", "Mexico", "Algeria", "Australia"],
+      "picks": ["France", "Belgium", "Mexico", "Australia", "Tunisia"],
       "bonusAnswers": { "goalsOver250": "Y", "winnerEuropean": "Y", "australiaThroughGroup": "Y" },
       "createdAt": 1747200004000
     },

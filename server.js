@@ -33,8 +33,8 @@ const DEFAULT_TIERS = {
   3: ["Morocco", "USA", "Uruguay", "Turkey", "Mexico", "Ecuador", "Sweden", "Croatia",
       "Switzerland", "Austria"],
   4: ["Senegal", "Czechia", "Canada", "Paraguay", "Scotland", "Ivory Coast", "Bosnia",
-      "Egypt", "Iran", "Algeria", "South Korea", "Ghana"],
-  5: ["Australia", "Tunisia", "DR Congo", "South Africa", "Saudi Arabia", "Panama", "Qatar",
+      "Egypt", "Iran", "Algeria", "South Korea", "Ghana", "Australia"],
+  5: ["Tunisia", "DR Congo", "South Africa", "Saudi Arabia", "Panama", "Qatar",
       "New Zealand", "Iraq", "Cape Verde", "Uzbekistan", "Jordan", "Haiti", "Curacao"],
 };
 
