@@ -23,21 +23,21 @@ const PICK_COUNT = 5;
 
 // 48-team roster — must match DEFAULT_TIERS in js/app.js
 const DEFAULT_TIERS = {
-  1: ["Spain", "France", "England", "Brazil"],
-  2: ["Argentina", "Portugal", "Germany", "Netherlands", "Norway", "Belgium"],
-  3: ["Colombia", "Japan", "Morocco", "USA", "Uruguay", "Turkey", "Mexico", "Ecuador",
-      "Sweden", "Croatia", "Switzerland", "Austria", "Senegal", "Czechia"],
-  4: ["Canada", "Paraguay", "Scotland", "Ivory Coast", "Bosnia", "Egypt", "Iran", "Algeria",
-      "South Korea", "Ghana", "Australia", "Tunisia"],
-  5: ["DR Congo", "South Africa", "Saudi Arabia", "Panama", "Qatar", "New Zealand",
-      "Iraq", "Cape Verde", "Uzbekistan", "Jordan", "Haiti", "Curacao"],
+  1: ["Spain", "France", "England", "Brazil", "Argentina"],
+  2: ["Portugal", "Germany", "Netherlands", "Norway", "Belgium", "Colombia", "Japan"],
+  3: ["Morocco", "USA", "Uruguay", "Turkey", "Mexico", "Ecuador", "Sweden", "Croatia",
+      "Switzerland", "Austria"],
+  4: ["Senegal", "Czechia", "Canada", "Paraguay", "Scotland", "Ivory Coast", "Bosnia",
+      "Egypt", "Iran", "Algeria", "South Korea", "Ghana"],
+  5: ["Australia", "Tunisia", "DR Congo", "South Africa", "Saudi Arabia", "Panama", "Qatar",
+      "New Zealand", "Iraq", "Cape Verde", "Uzbekistan", "Jordan", "Haiti", "Curacao"],
 };
 
 const DEFAULT_STATE = {
   tiers: JSON.parse(JSON.stringify(DEFAULT_TIERS)),
   entries: [],
   results: {},
-  bonus: { goalsOver250: "", penaltyShootouts: "", winnerEuropean: "", australiaThroughGroup: "" },
+  bonus: { goalsOver250: "", winnerEuropean: "", australiaThroughGroup: "" },
   settings: {},
 };
 
@@ -64,7 +64,6 @@ function safeStateShape(state) {
     results,
     bonus: {
       goalsOver250: bonus.goalsOver250 ?? "",
-      penaltyShootouts: bonus.penaltyShootouts ?? "",
       winnerEuropean: bonus.winnerEuropean ?? "",
       australiaThroughGroup: bonus.australiaThroughGroup ?? "",
     },
@@ -185,8 +184,7 @@ function entryEmailHtml(entry, state) {
     <table style="border-collapse:collapse;font-size:14px">${picks}</table>
     <h3 style="color:#0a1a3a;margin:16px 0 6px">Bonus answers</h3>
     <p style="margin:0">
-      &gt;290 goals (104 matches): <strong>${escHtml(a.goalsOver250 || "—")}</strong><br>
-      Penalty shootouts (32 KO games): <strong>${escHtml(a.penaltyShootouts ?? "—")}</strong><br>
+      300+ goals (104 matches): <strong>${escHtml(a.goalsOver250 || "—")}</strong><br>
       Tournament winner European: <strong>${escHtml(a.winnerEuropean || "—")}</strong><br>
       Australia through group stage: <strong>${escHtml(a.australiaThroughGroup || "—")}</strong>
     </p>
@@ -209,8 +207,7 @@ Picks:
 ${picks}
 
 Bonus answers:
-  >290 goals (104 matches): ${a.goalsOver250 || "—"}
-  Penalty shootouts (32 KO games): ${a.penaltyShootouts ?? "—"}
+  300+ goals (104 matches): ${a.goalsOver250 || "—"}
   Tournament winner European: ${a.winnerEuropean || "—"}
   Australia through group stage: ${a.australiaThroughGroup || "—"}
 
@@ -291,14 +288,12 @@ function validateEntryPayload(payload, currentTiers) {
   }
   const ba = payload.bonusAnswers || {};
   const goals = String(ba.goalsOver250 || "").trim();
-  const shootouts = String(ba.penaltyShootouts ?? "").trim();
   const european = String(ba.winnerEuropean || "").trim();
   const australia = String(ba.australiaThroughGroup || "").trim();
   if (goals !== "Y" && goals !== "N") return "bonusAnswers.goalsOver250 must be Y or N";
-  if (!/^\d{1,3}$/.test(shootouts)) return "bonusAnswers.penaltyShootouts must be a number";
   if (european !== "Y" && european !== "N") return "bonusAnswers.winnerEuropean must be Y or N";
   if (australia !== "Y" && australia !== "N") return "bonusAnswers.australiaThroughGroup must be Y or N";
-  return { entrant, team, picks, bonusAnswers: { goalsOver250: goals, penaltyShootouts: shootouts, winnerEuropean: european, australiaThroughGroup: australia } };
+  return { entrant, team, picks, bonusAnswers: { goalsOver250: goals, winnerEuropean: european, australiaThroughGroup: australia } };
 }
 
 app.get("/health", (_req, res) => {

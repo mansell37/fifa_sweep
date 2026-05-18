@@ -24,14 +24,14 @@ const PICK_COUNT = 5;
 
 // 48-team roster from ESPN/DraftKings outright odds, early April 2026.
 const DEFAULT_TIERS = {
-    1: ['Spain', 'France', 'England', 'Brazil'],
-    2: ['Argentina', 'Portugal', 'Germany', 'Netherlands', 'Norway', 'Belgium'],
-    3: ['Colombia', 'Japan', 'Morocco', 'USA', 'Uruguay', 'Turkey', 'Mexico', 'Ecuador',
-        'Sweden', 'Croatia', 'Switzerland', 'Austria', 'Senegal', 'Czechia'],
-    4: ['Canada', 'Paraguay', 'Scotland', 'Ivory Coast', 'Bosnia', 'Egypt', 'Iran', 'Algeria',
-        'South Korea', 'Ghana', 'Australia', 'Tunisia'],
-    5: ['DR Congo', 'South Africa', 'Saudi Arabia', 'Panama', 'Qatar', 'New Zealand',
-        'Iraq', 'Cape Verde', 'Uzbekistan', 'Jordan', 'Haiti', 'Curacao'],
+    1: ['Spain', 'France', 'England', 'Brazil', 'Argentina'],
+    2: ['Portugal', 'Germany', 'Netherlands', 'Norway', 'Belgium', 'Colombia', 'Japan'],
+    3: ['Morocco', 'USA', 'Uruguay', 'Turkey', 'Mexico', 'Ecuador', 'Sweden', 'Croatia',
+        'Switzerland', 'Austria'],
+    4: ['Senegal', 'Czechia', 'Canada', 'Paraguay', 'Scotland', 'Ivory Coast', 'Bosnia',
+        'Egypt', 'Iran', 'Algeria', 'South Korea', 'Ghana'],
+    5: ['Australia', 'Tunisia', 'DR Congo', 'South Africa', 'Saudi Arabia', 'Panama', 'Qatar',
+        'New Zealand', 'Iraq', 'Cape Verde', 'Uzbekistan', 'Jordan', 'Haiti', 'Curacao'],
 };
 
 const KO_ROUNDS = [
@@ -43,8 +43,7 @@ const KO_ROUNDS = [
 ];
 
 const BONUS_QUESTIONS = [
-    { key: 'goalsOver250', label: 'More than 290 goals in the tournament? (104 matches)', type: 'yn', short: '>290 goals', col: '>290?' },
-    { key: 'penaltyShootouts', label: 'How many penalty shootouts in the knockout stage? (32 games)', type: 'num', short: 'Shootouts', col: 'Pens' },
+    { key: 'goalsOver250', label: 'Will there be 300 or more goals in the tournament? (104 matches)', type: 'yn', short: '300+ goals', col: '300+?' },
     { key: 'winnerEuropean', label: 'Will the tournament winner be a European team?', type: 'yn', short: 'European winner', col: 'Euro?' },
     { key: 'australiaThroughGroup', label: 'Will Australia make it out of the group stage?', type: 'yn', short: 'Aus through groups', col: 'Aus?' },
 ];
@@ -56,7 +55,7 @@ const BONUS_POINTS_PER_CORRECT = 3;
 let tiers          = JSON.parse(JSON.stringify(DEFAULT_TIERS));  // { 1..5: [teamName, ...] }
 let entries        = [];
 let results        = {};   // teamName -> { groupW, groupD, groupL, r32, r16, qf, sf, final, thirdPlace }
-let bonus          = { goalsOver250: '', penaltyShootouts: '', winnerEuropean: '', australiaThroughGroup: '' };
+let bonus          = { goalsOver250: '', winnerEuropean: '', australiaThroughGroup: '' };
 let settings       = {};
 let activeTab      = 'sweep';
 let adminMode      = false;
@@ -123,10 +122,9 @@ async function loadFromServer() {
         results = isObject(state.results) ? state.results : {};
         bonus = isObject(state.bonus) ? {
             goalsOver250: state.bonus.goalsOver250 || '',
-            penaltyShootouts: state.bonus.penaltyShootouts ?? '',
             winnerEuropean: state.bonus.winnerEuropean || '',
             australiaThroughGroup: state.bonus.australiaThroughGroup || '',
-        } : { goalsOver250: '', penaltyShootouts: '', winnerEuropean: '', australiaThroughGroup: '' };
+        } : { goalsOver250: '', winnerEuropean: '', australiaThroughGroup: '' };
         settings = isObject(state.settings) ? state.settings : {};
         // Mirror to local cache
         save(STORAGE.entries, entries);
@@ -183,10 +181,9 @@ function normalizeEntries(arr) {
         picks: rawPicks,
         bonusAnswers: isObject(en.bonusAnswers) ? {
             goalsOver250: en.bonusAnswers.goalsOver250 || '',
-            penaltyShootouts: en.bonusAnswers.penaltyShootouts ?? '',
             winnerEuropean: en.bonusAnswers.winnerEuropean || '',
             australiaThroughGroup: en.bonusAnswers.australiaThroughGroup || '',
-        } : { goalsOver250: '', penaltyShootouts: '', winnerEuropean: '', australiaThroughGroup: '' },
+        } : { goalsOver250: '', winnerEuropean: '', australiaThroughGroup: '' },
         createdAt: en.createdAt || Date.now(),
     });
     });
@@ -233,8 +230,6 @@ function bonusPointsFor(entry) {
     let pts = 0;
     const a = entry.bonusAnswers || {};
     if (bonus.goalsOver250 && a.goalsOver250 && a.goalsOver250 === bonus.goalsOver250) pts += BONUS_POINTS_PER_CORRECT;
-    if (bonus.penaltyShootouts !== '' && a.penaltyShootouts !== '' && a.penaltyShootouts != null
-        && Number(a.penaltyShootouts) === Number(bonus.penaltyShootouts)) pts += BONUS_POINTS_PER_CORRECT;
     if (bonus.winnerEuropean && a.winnerEuropean && a.winnerEuropean === bonus.winnerEuropean) pts += BONUS_POINTS_PER_CORRECT;
     if (bonus.australiaThroughGroup && a.australiaThroughGroup && a.australiaThroughGroup === bonus.australiaThroughGroup) pts += BONUS_POINTS_PER_CORRECT;
     return pts;
@@ -295,12 +290,11 @@ function setupEntryForm() {
         }
         const bonusAnswers = {
             goalsOver250: document.getElementById('bonusGoals').value,
-            penaltyShootouts: document.getElementById('bonusShootouts').value,
             winnerEuropean: document.getElementById('bonusEuropean').value,
             australiaThroughGroup: document.getElementById('bonusAustralia').value,
         };
-        if (!bonusAnswers.goalsOver250 || bonusAnswers.penaltyShootouts === '' || !bonusAnswers.winnerEuropean || !bonusAnswers.australiaThroughGroup) {
-            alert('Please answer all four bonus questions.');
+        if (!bonusAnswers.goalsOver250 || !bonusAnswers.winnerEuropean || !bonusAnswers.australiaThroughGroup) {
+            alert('Please answer all three bonus questions.');
             return;
         }
         const submitBtn = form.querySelector('button[type="submit"]');
@@ -376,8 +370,8 @@ function renderLeaderboard() {
         return;
     }
 
-    const ranked = entries.map(en => ({ en, total: entryTotal(en) }))
-        .sort((a, b) => b.total - a.total);
+    const ranked = entries.map(en => ({ en, total: entryTotal(en), bonusPts: bonusPointsFor(en) }))
+        .sort((a, b) => b.total - a.total || b.bonusPts - a.bonusPts);
 
     body.innerHTML = ranked.map(({ en, total }, idx) => {
         const rankClass = idx === 0 ? 'r1' : idx === 1 ? 'r2' : idx === 2 ? 'r3' : '';
@@ -561,7 +555,6 @@ function renderAnalytics() {
 
     // --- Bonus consensus ---
     let goalsY = 0, goalsN = 0, europeanY = 0, europeanN = 0, ausY = 0, ausN = 0;
-    const shootouts = [];
     for (const en of entries) {
         const a = en.bonusAnswers || {};
         if (a.goalsOver250 === 'Y') goalsY++;
@@ -570,10 +563,7 @@ function renderAnalytics() {
         else if (a.winnerEuropean === 'N') europeanN++;
         if (a.australiaThroughGroup === 'Y') ausY++;
         else if (a.australiaThroughGroup === 'N') ausN++;
-        if (a.penaltyShootouts !== '' && a.penaltyShootouts != null) shootouts.push(Number(a.penaltyShootouts));
     }
-    const numOrDash = arr => arr.length ? (arr.reduce((s, v) => s + v, 0) / arr.length).toFixed(1) : '—';
-    const rangeOrDash = arr => arr.length ? `${Math.min(...arr)} – ${Math.max(...arr)}` : '—';
 
     // --- Picks-still-alive per entry (team has won at least one KO round) ---
     const aliveCounts = entries.map(en => {
@@ -629,9 +619,7 @@ function renderAnalytics() {
 
         <div class="analytics-card">
             <h3>Bonus question consensus</h3>
-            <div class="analytics-stat-row"><span>&gt;290 goals: Yes / No</span><span class="stat-val">${goalsY} / ${goalsN}</span></div>
-            <div class="analytics-stat-row"><span>Avg shootouts guess</span><span class="stat-val">${numOrDash(shootouts)}</span></div>
-            <div class="analytics-stat-row"><span>Shootouts range</span><span class="stat-val">${rangeOrDash(shootouts)}</span></div>
+            <div class="analytics-stat-row"><span>300+ goals: Yes / No</span><span class="stat-val">${goalsY} / ${goalsN}</span></div>
             <div class="analytics-stat-row"><span>European winner: Yes / No</span><span class="stat-val">${europeanY} / ${europeanN}</span></div>
             <div class="analytics-stat-row"><span>Australia through groups: Yes / No</span><span class="stat-val">${ausY} / ${ausN}</span></div>
         </div>
@@ -1001,7 +989,7 @@ async function init() {
     // Local cache first (instant render)
     entries = normalizeEntries(load(STORAGE.entries, []));
     results = load(STORAGE.results, {});
-    bonus = load(STORAGE.bonus, { goalsOver250: '', penaltyShootouts: '', redCards: '' });
+    bonus = load(STORAGE.bonus, { goalsOver250: '', winnerEuropean: '', australiaThroughGroup: '' });
     settings = load(STORAGE.settings, {});
 
     setupTabs();

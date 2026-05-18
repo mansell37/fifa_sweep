@@ -4,22 +4,22 @@ Companion sweep app for the FIFA World Cup 2026. Static frontend + tiny Express 
 
 ## Format
 
-- 48 teams across 5 groups, ranked by outright odds (ESPN/DraftKings, early April 2026)
+- 48 teams across 5 groups (sizes 5 / 7 / 10 / 12 / 14), ranked by outright odds (ESPN/DraftKings, early April 2026)
 - Each entrant picks **one team per group** (5 picks total)
 - Group multipliers: **G1 ×1, G2 ×1.5, G3 ×2, G4 ×4, G5 ×6**
 
 ### Scoring per team
 - **3 pts** per win (group stage, knockouts, and 3rd-place playoff)
 - **1 pt** per group-stage draw
-- Max raw per team: **24 pts × group multiplier**
+- Entrant total = sum of all 5 picks (each × that team's group multiplier)
+- **Tie-breaker:** if two or more entrants tie on total, the **bonus point total** decides
 
-### Bonus questions (+3 each, exact match)
-1. More than 290 goals in the tournament? (104 matches) (Y/N)
-2. Number of penalty shootouts in the knockout stage (32 games)
-3. Will the tournament winner be a European team? (Y/N)
-4. Will Australia make it out of the group stage? (Y/N)
+### Bonus questions (+3 each)
+1. Will there be 300 or more goals in the tournament? (104 matches) (Y/N)
+2. Will the tournament winner be a European team? (Y/N)
+3. Will Australia make it out of the group stage? (Y/N)
 
-Max bonus: 12 pts.
+Max bonus: 9 pts.
 
 ## Local run
 
@@ -58,7 +58,7 @@ npm start
 Public:
 - `GET  /health` → `{ ok: true }`
 - `GET  /api/state` → full state object (leaderboard / picks / results — non-sensitive)
-- `POST /api/entries` → submit a new entry. Body: `{ entrant, team, picks: [t1,t2,t3,t4], bonusAnswers: { goalsOver250, penaltyShootouts, redCards } }`. Validated server-side; rejects picks not in the group roster.
+- `POST /api/entries` → submit a new entry. Body: `{ entrant, team, picks: [g1,g2,g3,g4,g5], bonusAnswers: { goalsOver250, winnerEuropean, australiaThroughGroup } }`. Validated server-side; rejects picks not in the group roster.
 - `POST /api/admin/verify` → check admin token via `X-Admin-Token` header. Returns 200/401.
 
 Admin (require `X-Admin-Token: <ADMIN_TOKEN>` header):
