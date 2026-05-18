@@ -949,3 +949,250 @@ body.admin-active .admin-only { display: revert; }
     .container { padding: 16px 12px 32px; }
     h2 { font-size: 18px; }
 }
+
+/* ========================================
+   EMAIL GUIDE TAB (admin-only, screenshot-ready)
+   ======================================== */
+.eg-page {
+    background: #fff;
+    border-radius: 14px;
+    padding: 32px 36px 28px;
+    box-shadow: 0 4px 20px rgba(10, 26, 58, 0.08);
+    border: 1px solid #e5e7eb;
+}
+.eg-header {
+    text-align: center;
+    padding-bottom: 22px;
+    border-bottom: 3px solid var(--wc-gold);
+    margin-bottom: 24px;
+}
+.eg-header h1 {
+    color: var(--wc-navy-deep);
+    font-size: 32px;
+    margin: 0 0 6px;
+    letter-spacing: -0.5px;
+}
+.eg-subhead {
+    color: #4b5563;
+    font-size: 15px;
+    margin: 0 0 10px;
+}
+.eg-url {
+    margin: 0;
+    color: var(--wc-pitch);
+    font-size: 15px;
+}
+.eg-url strong { color: var(--wc-navy-deep); }
+
+.eg-row {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+@media (max-width: 1000px) { .eg-row { grid-template-columns: 1fr; } }
+
+.eg-card {
+    background: var(--wc-cream);
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px 18px;
+}
+.eg-card h2 {
+    margin: 0 0 10px;
+    color: var(--wc-navy-deep);
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.eg-pill {
+    background: var(--wc-gold);
+    color: var(--wc-navy-deep);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+.eg-steps {
+    margin: 0;
+    padding-left: 22px;
+    line-height: 1.7;
+    font-size: 14px;
+    color: #1f2937;
+}
+.eg-steps li { margin-bottom: 4px; }
+
+.eg-bonus-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14px;
+    color: #1f2937;
+    line-height: 1.5;
+}
+.eg-bonus-list li {
+    padding: 8px 0;
+    border-bottom: 1px dashed #d1d5db;
+}
+.eg-bonus-list li:last-child { border-bottom: 0; }
+.eg-bonus-num {
+    color: var(--wc-pitch);
+    font-weight: 700;
+    margin-right: 4px;
+}
+
+.eg-scoring {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #1f2937;
+}
+.eg-scoring li { margin-bottom: 5px; }
+
+.eg-section { margin-bottom: 28px; }
+.eg-section h2 {
+    color: var(--wc-navy-deep);
+    font-size: 20px;
+    margin: 0 0 6px;
+    border-left: 4px solid var(--wc-gold);
+    padding-left: 10px;
+}
+.eg-section-hint {
+    color: #6b7280;
+    font-size: 13px;
+    margin: 0 0 14px;
+}
+.eg-footnote {
+    color: #9ca3af;
+    font-size: 12px;
+    text-align: right;
+    margin: 8px 0 0;
+    font-style: italic;
+}
+
+.eg-groups-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+}
+@media (max-width: 1100px) { .eg-groups-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .eg-groups-grid { grid-template-columns: 1fr; } }
+
+.eg-group {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+}
+.eg-group-1 { border-top: 4px solid var(--t1); background: var(--t1-bg); }
+.eg-group-2 { border-top: 4px solid var(--t2); background: var(--t2-bg); }
+.eg-group-3 { border-top: 4px solid var(--t3); background: var(--t3-bg); }
+.eg-group-4 { border-top: 4px solid var(--t4); background: var(--t4-bg); }
+.eg-group-5 { border-top: 4px solid var(--t5); background: var(--t5-bg); }
+.eg-group-head {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.55);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.eg-group-title {
+    font-weight: 800;
+    color: var(--wc-navy-deep);
+    font-size: 14px;
+    flex: 1;
+}
+.eg-group-mult {
+    font-weight: 700;
+    color: var(--wc-navy-deep);
+    background: rgba(255,255,255,0.85);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+}
+.eg-group-count { color: #6b7280; font-size: 11px; }
+.eg-group-teams {
+    list-style: none;
+    margin: 0;
+    padding: 8px 12px 12px;
+    font-size: 13px;
+    color: #1f2937;
+    line-height: 1.65;
+}
+.eg-group-teams li {
+    padding: 1px 0;
+    border-bottom: 1px dotted rgba(0,0,0,0.06);
+}
+.eg-group-teams li:last-child { border-bottom: 0; }
+
+.eg-leaderboard-wrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+}
+.eg-leaderboard {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.eg-leaderboard thead {
+    background: var(--wc-navy-deep);
+    color: #fff;
+}
+.eg-leaderboard th {
+    padding: 10px 8px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.3px;
+}
+.eg-leaderboard th.eg-total-head { text-align: right; }
+.eg-leaderboard td {
+    padding: 8px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+}
+.eg-leaderboard tbody tr:last-child td { border-bottom: 0; }
+.eg-leaderboard tbody tr.eg-rank-1 { background: rgba(212,175,55,0.16); }
+.eg-leaderboard tbody tr.eg-rank-2 { background: rgba(156,163,175,0.14); }
+.eg-leaderboard tbody tr.eg-rank-3 { background: rgba(180,83,9,0.12); }
+.eg-rank {
+    font-weight: 800;
+    color: var(--wc-navy-deep);
+    width: 36px;
+    text-align: center;
+}
+.eg-entrant { min-width: 130px; }
+.eg-team-name { font-weight: 700; color: var(--wc-navy-deep); }
+.eg-entrant-name { color: #6b7280; font-size: 11px; }
+.eg-pick-cell { min-width: 110px; line-height: 1.35; }
+.eg-pick-team { font-weight: 600; color: #111827; font-size: 12.5px; }
+.eg-pick-calc { color: #4b5563; font-size: 11px; }
+.eg-pick-calc strong { color: var(--wc-pitch); }
+.eg-pick-note { color: #9ca3af; font-size: 10.5px; font-style: italic; }
+.eg-bonus {
+    text-align: center;
+    color: var(--wc-pitch);
+    font-weight: 700;
+    font-size: 13px;
+}
+.eg-total {
+    text-align: right;
+    font-weight: 800;
+    color: var(--wc-navy-deep);
+    font-size: 17px;
+    padding-right: 14px !important;
+}
+
+.eg-footer {
+    text-align: center;
+    margin-top: 28px;
+    padding: 14px;
+    background: var(--wc-navy-deep);
+    color: var(--wc-gold);
+    border-radius: 10px;
+    font-size: 15px;
+}

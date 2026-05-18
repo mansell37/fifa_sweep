@@ -261,6 +261,7 @@ function activateTab(tab) {
     if (tab === 'tiers') renderTiers();
     if (tab === 'rules') renderRulesBonus();
     if (tab === 'analytics') renderAnalytics();
+    if (tab === 'emailguide') renderEmailGuide();
 }
 
 // =============================================================
@@ -691,6 +692,186 @@ window.confirmAdminPassword = async function () {
 window.closeAdminModal = function () {
     document.getElementById('adminPwModal').classList.remove('active');
 };
+
+// =============================================================
+// ADMIN: EMAIL GUIDE TAB (screenshot-ready welcome email)
+// =============================================================
+function renderEmailGuide() {
+    const root = document.getElementById('emailGuideContent');
+    if (!root) return;
+    const siteUrl = window.location.origin || 'https://your-sweep-url';
+
+    const groupCards = TIER_KEYS.map(t => `
+        <div class="eg-group eg-group-${t}">
+            <div class="eg-group-head">
+                <span class="eg-group-title">Group ${t}</span>
+                <span class="eg-group-mult">&times;${TIER_MULTIPLIERS[t]}</span>
+                <span class="eg-group-count">${tiers[t].length} teams</span>
+            </div>
+            <ul class="eg-group-teams">
+                ${tiers[t].map(team => `<li>${escapeHtml(team)}</li>`).join('')}
+            </ul>
+        </div>
+    `).join('');
+
+    const bonusList = BONUS_QUESTIONS.map((q, i) => `
+        <li><span class="eg-bonus-num">${i + 1}.</span> ${escapeHtml(q.label)}</li>
+    `).join('');
+
+    // Worked example: 5 mock entries showing how scoring works
+    const example = [
+        {
+            entrant: 'Matt Ansell', team: 'Hoof It Long',
+            picks: [
+                { team: tiers[1][0], raw: 12, mult: TIER_MULTIPLIERS[1], note: '3W + R32' },
+                { team: tiers[2][0], raw: 12, mult: TIER_MULTIPLIERS[2], note: '3W + R32' },
+                { team: tiers[3][0], raw: 7,  mult: TIER_MULTIPLIERS[3], note: '2W 1D' },
+                { team: tiers[4][0], raw: 4,  mult: TIER_MULTIPLIERS[4], note: '1W 1D' },
+                { team: tiers[5][0], raw: 3,  mult: TIER_MULTIPLIERS[5], note: '1W' },
+            ],
+            bonus: 6,
+        },
+        {
+            entrant: 'Joe Bloggs', team: 'Park The Bus',
+            picks: [
+                { team: tiers[1][1], raw: 9, mult: TIER_MULTIPLIERS[1], note: '3W' },
+                { team: tiers[2][1], raw: 6, mult: TIER_MULTIPLIERS[2], note: '2W' },
+                { team: tiers[3][2], raw: 4, mult: TIER_MULTIPLIERS[3], note: '1W 1D' },
+                { team: tiers[4][3], raw: 3, mult: TIER_MULTIPLIERS[4], note: '1W' },
+                { team: tiers[5][2], raw: 1, mult: TIER_MULTIPLIERS[5], note: '1D' },
+            ],
+            bonus: 9,
+        },
+        {
+            entrant: 'Jane Doe', team: 'Tiki Taka',
+            picks: [
+                { team: tiers[1][2], raw: 7, mult: TIER_MULTIPLIERS[1], note: '2W 1D' },
+                { team: tiers[2][2], raw: 4, mult: TIER_MULTIPLIERS[2], note: '1W 1D' },
+                { team: tiers[3][3], raw: 6, mult: TIER_MULTIPLIERS[3], note: '2W' },
+                { team: tiers[4][4], raw: 3, mult: TIER_MULTIPLIERS[4], note: '1W' },
+                { team: tiers[5][5], raw: 1, mult: TIER_MULTIPLIERS[5], note: '1D' },
+            ],
+            bonus: 3,
+        },
+        {
+            entrant: 'Alex Smith', team: 'Counter Press',
+            picks: [
+                { team: tiers[1][3], raw: 6, mult: TIER_MULTIPLIERS[1], note: '2W' },
+                { team: tiers[2][3], raw: 3, mult: TIER_MULTIPLIERS[2], note: '1W' },
+                { team: tiers[3][4], raw: 4, mult: TIER_MULTIPLIERS[3], note: '1W 1D' },
+                { team: tiers[4][5], raw: 1, mult: TIER_MULTIPLIERS[4], note: '1D' },
+                { team: tiers[5][7], raw: 0, mult: TIER_MULTIPLIERS[5], note: 'no pts' },
+            ],
+            bonus: 6,
+        },
+        {
+            entrant: 'Sam Taylor', team: 'Top Bins',
+            picks: [
+                { team: tiers[1][4], raw: 4, mult: TIER_MULTIPLIERS[1], note: '1W 1D' },
+                { team: tiers[2][4], raw: 1, mult: TIER_MULTIPLIERS[2], note: '1D' },
+                { team: tiers[3][6], raw: 3, mult: TIER_MULTIPLIERS[3], note: '1W' },
+                { team: tiers[4][8], raw: 0, mult: TIER_MULTIPLIERS[4], note: 'no pts' },
+                { team: tiers[5][10], raw: 0, mult: TIER_MULTIPLIERS[5], note: 'no pts' },
+            ],
+            bonus: 0,
+        },
+    ];
+    const exampleRows = example.map(e => {
+        const totals = e.picks.map(p => p.raw * p.mult);
+        const picksTotal = totals.reduce((s, v) => s + v, 0);
+        const grand = picksTotal + e.bonus;
+        return { ...e, totals, picksTotal, grand };
+    }).sort((a, b) => b.grand - a.grand || b.bonus - a.bonus);
+    const exampleTable = exampleRows.map((e, i) => {
+        const rankClass = i === 0 ? 'eg-rank-1' : i === 1 ? 'eg-rank-2' : i === 2 ? 'eg-rank-3' : '';
+        const pickCells = e.picks.map((p, idx) => {
+            const scaled = e.totals[idx];
+            return `<td class="eg-pick-cell">
+                <div class="eg-pick-team">${escapeHtml(p.team)}</div>
+                <div class="eg-pick-calc">${p.raw} &times; ${p.mult} = <strong>${formatPts(scaled)}</strong></div>
+                <div class="eg-pick-note">${p.note}</div>
+            </td>`;
+        }).join('');
+        return `<tr class="${rankClass}">
+            <td class="eg-rank">${i + 1}</td>
+            <td class="eg-entrant">
+                <div class="eg-team-name">${escapeHtml(e.team)}</div>
+                <div class="eg-entrant-name">${escapeHtml(e.entrant)}</div>
+            </td>
+            ${pickCells}
+            <td class="eg-bonus">+${e.bonus}</td>
+            <td class="eg-total">${formatPts(e.grand)}</td>
+        </tr>`;
+    }).join('');
+
+    root.innerHTML = `
+        <div class="eg-page">
+            <div class="eg-header">
+                <h1>🏆 World Cup 2026 Sweepstake</h1>
+                <p class="eg-subhead">Pick 5 teams · score across the tournament · highest total wins</p>
+                <p class="eg-url">Enter at <strong>${escapeHtml(siteUrl)}</strong></p>
+            </div>
+
+            <div class="eg-row">
+                <div class="eg-card eg-steps-card">
+                    <h2>How to enter</h2>
+                    <ol class="eg-steps">
+                        <li>Open <strong>${escapeHtml(siteUrl)}</strong></li>
+                        <li>Click the <strong>Enter Team</strong> tab</li>
+                        <li>Enter your <strong>name</strong> and a <strong>fun team name</strong></li>
+                        <li>Pick <strong>one team</strong> from each of the 5 groups</li>
+                        <li>Answer the <strong>3 bonus questions</strong> (Yes / No)</li>
+                        <li>Click <strong>Submit Team</strong> — done!</li>
+                    </ol>
+                </div>
+                <div class="eg-card eg-bonus-card">
+                    <h2>Bonus questions <span class="eg-pill">+${BONUS_POINTS_PER_CORRECT} pts each</span></h2>
+                    <ol class="eg-bonus-list">${bonusList}</ol>
+                </div>
+                <div class="eg-card eg-scoring-card">
+                    <h2>Scoring</h2>
+                    <ul class="eg-scoring">
+                        <li><strong>3 pts</strong> per win (group, knockouts &amp; 3rd-place playoff)</li>
+                        <li><strong>1 pt</strong> per group-stage draw</li>
+                        <li>Each team's total &times; its <strong>group multiplier</strong></li>
+                        <li>Total = sum of all 5 picks + bonus points</li>
+                        <li><strong>Tie-breaker:</strong> bonus points decide</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="eg-section">
+                <h2>The 5 groups</h2>
+                <p class="eg-section-hint">Pick one team from each group. Smaller groups have stronger favourites and smaller multipliers; bigger groups are riskier but score much more per point.</p>
+                <div class="eg-groups-grid">${groupCards}</div>
+            </div>
+
+            <div class="eg-section">
+                <h2>Worked example — how the leaderboard looks</h2>
+                <p class="eg-section-hint">Sample after a few rounds. Each pick cell shows the team, the raw points &times; group multiplier, and the result. Bonus column is the 3 bonus answers. Highest grand total wins.</p>
+                <div class="eg-leaderboard-wrap">
+                    <table class="eg-leaderboard">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Team / Entrant</th>
+                                ${TIER_KEYS.map(t => `<th>G${t} (&times;${TIER_MULTIPLIERS[t]})</th>`).join('')}
+                                <th>Bonus</th>
+                                <th class="eg-total-head">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>${exampleTable}</tbody>
+                    </table>
+                </div>
+                <p class="eg-footnote">Example only — actual leaderboard updates live as match results are entered.</p>
+            </div>
+
+            <div class="eg-footer">
+                <strong>Good luck — and may the best (luckiest) pick win.</strong>
+            </div>
+        </div>
+    `;
+}
 
 // =============================================================
 // ADMIN: BONUS ANSWERS FORM (in Enter tab)
