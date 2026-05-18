@@ -14,6 +14,11 @@ const BACKUP_FILE_RE = /^state-\d{8}-\d{6}(?:-\d{3})?\.json$/;
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const BACKUP_EMAIL = process.env.BACKUP_EMAIL || "matt.ansell93@gmail.com";
 const BACKUP_FROM_EMAIL = process.env.BACKUP_FROM_EMAIL || "WC Sweep <onboarding@resend.dev>";
+const DIGEST_EMAIL = process.env.DIGEST_EMAIL || BACKUP_EMAIL;
+const DIGEST_HOUR_UTC = (() => {
+  const h = parseInt(process.env.DIGEST_HOUR_UTC ?? "21", 10);
+  return Number.isFinite(h) && h >= 0 && h <= 23 ? h : 21;
+})();
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "fifa2026";
 const ENTRY_FIELD_MAX = 80;
@@ -256,6 +261,105 @@ async function notifyNewEntries(prevState, nextState) {
   }
 }
 
+// --- Daily digest -------------------------------------------------------
+
+function digestEmailHtml(state, dateLabel) {
+  const entries = [...(state.entries || [])].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  const rows = entries.map((e, i) => {
+    const ba = e.bonusAnswers || {};
+    const submitted = new Date(e.createdAt || 0).toISOString().slice(0, 10);
+    const picks = (e.picks || []).map((p) => escHtml(p || "—")).join(" / ");
+    const bonus = [ba.goalsOver250, ba.winnerEuropean, ba.australiaThroughGroup]
+      .map((v) => escHtml(v || "—")).join(" / ");
+    return `<tr>
+      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb">${i + 1}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb"><strong>${escHtml(e.entrant)}</strong></td>
+      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb">${escHtml(e.team)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;font-size:12px">${picks}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;font-size:12px">${bonus}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280">${submitted}</td>
+    </tr>`;
+  }).join("");
+  const body = entries.length
+    ? `<table style="border-collapse:collapse;font-size:14px;width:100%">
+        <thead><tr style="background:#0a1a3a;color:#fff;text-align:left">
+          <th style="padding:6px 8px">#</th>
+          <th style="padding:6px 8px">Entrant</th>
+          <th style="padding:6px 8px">Team name</th>
+          <th style="padding:6px 8px">Picks (G1 / G2 / G3 / G4 / G5)</th>
+          <th style="padding:6px 8px">Bonus (300+ / Euro / Aus)</th>
+          <th style="padding:6px 8px">Submitted</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`
+    : `<p style="color:#6b7280">No entries submitted yet.</p>`;
+  return `<div style="font-family:Inter,Arial,sans-serif;max-width:900px;color:#111">
+    <h2 style="color:#0a1a3a;margin:0 0 8px">WC Sweep — Daily Roster (${escHtml(dateLabel)})</h2>
+    <p style="margin:0 0 12px">Total entries: <strong>${entries.length}</strong></p>
+    ${body}
+    <hr style="border:0;border-top:1px solid #e5e7eb;margin:20px 0">
+    <p style="color:#6b7280;font-size:12px;margin:0">Full state JSON is attached for backup. Automated daily digest from the WC Sweep app.</p>
+  </div>`;
+}
+
+function digestEmailText(state, dateLabel) {
+  const entries = [...(state.entries || [])].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  if (entries.length === 0) {
+    return `WC Sweep — Daily Roster (${dateLabel})\n\nNo entries submitted yet.`;
+  }
+  const lines = entries.map((e, i) => {
+    const ba = e.bonusAnswers || {};
+    const picks = (e.picks || []).map((p) => p || "—").join(" / ");
+    const bonus = [ba.goalsOver250 || "—", ba.winnerEuropean || "—", ba.australiaThroughGroup || "—"].join(" / ");
+    const submitted = new Date(e.createdAt || 0).toISOString().slice(0, 10);
+    return `${i + 1}. ${e.entrant} — "${e.team}"\n   Picks: ${picks}\n   Bonus (300+/Euro/Aus): ${bonus}\n   Submitted: ${submitted}`;
+  }).join("\n\n");
+  return `WC Sweep — Daily Roster (${dateLabel})\nTotal entries: ${entries.length}\n\n${lines}\n\nFull state JSON attached for backup.`;
+}
+
+async function sendDailyDigest(state) {
+  if (!RESEND_API_KEY) return { skipped: "no API key" };
+  const dateLabel = new Date().toISOString().slice(0, 10);
+  const stateJson = JSON.stringify(state, null, 2);
+  const attachmentName = `wc-sweep-state-${dateLabel}.json`;
+  const recipients = DIGEST_EMAIL.split(",").map((s) => s.trim()).filter(Boolean);
+  const payload = {
+    from: BACKUP_FROM_EMAIL,
+    to: recipients,
+    subject: `WC Sweep Daily Roster — ${dateLabel} (${state.entries.length} entries)`,
+    html: digestEmailHtml(state, dateLabel),
+    text: digestEmailText(state, dateLabel),
+    attachments: [{ filename: attachmentName, content: Buffer.from(stateJson).toString("base64") }],
+  };
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`Resend HTTP ${res.status}: ${errText.slice(0, 300)}`);
+  }
+  return { sent: true };
+}
+
+let lastDigestDate = "";  // YYYY-MM-DD (UTC) of last successful send
+async function maybeSendDailyDigest() {
+  if (!RESEND_API_KEY) return;
+  const now = new Date();
+  if (now.getUTCHours() !== DIGEST_HOUR_UTC) return;
+  const today = now.toISOString().slice(0, 10);
+  if (lastDigestDate === today) return;
+  try {
+    const state = await readState();
+    await sendDailyDigest(state);
+    lastDigestDate = today;
+    console.log(`Daily digest sent for ${today} (${state.entries.length} entries)`);
+  } catch (err) {
+    console.warn(`Daily digest failed for ${today}:`, err.message);
+  }
+}
+
 function enqueueWrite(task) {
   writeQueue = writeQueue.then(task, task);
   return writeQueue;
@@ -419,6 +523,9 @@ app.listen(port, () => {
   console.log(`World Cup Sweep running on port ${port}`);
   if (RESEND_API_KEY) {
     console.log(`Email notifications: enabled (to=${BACKUP_EMAIL}, from=${BACKUP_FROM_EMAIL})`);
+    console.log(`Daily digest: ${DIGEST_HOUR_UTC.toString().padStart(2, "0")}:00 UTC to ${DIGEST_EMAIL}`);
+    setInterval(maybeSendDailyDigest, 5 * 60 * 1000);
+    maybeSendDailyDigest();
   } else {
     console.log("Email notifications: disabled (set RESEND_API_KEY env var to enable)");
   }

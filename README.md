@@ -51,6 +51,8 @@ npm start
 | `RESEND_API_KEY` | optional | _empty_ | Enables email notification on each new entry. Get from [resend.com](https://resend.com). |
 | `BACKUP_EMAIL` | optional | `matt.ansell93@gmail.com` | Comma-separated recipient(s). |
 | `BACKUP_FROM_EMAIL` | optional | `WC Sweep <onboarding@resend.dev>` | From address. The default works without verifying a domain, but Resend will only deliver to the email you signed up with. To send to other addresses, verify your own domain in Resend and update this to e.g. `WC Sweep <noreply@yourdomain.com>`. |
+| `DIGEST_EMAIL` | optional | _same as `BACKUP_EMAIL`_ | Recipient(s) for the daily-roster digest. Comma-separated. |
+| `DIGEST_HOUR_UTC` | optional | `21` | Hour of day (0–23, UTC) when the daily digest is sent. Default `21` = 7am AEDT / 8am AEST. Requires `RESEND_API_KEY`. |
 | `DATA_SEED` | optional | _empty_ | One-time JSON blob to seed initial state. Used only when no `state.json` exists. |
 
 ## Endpoints
