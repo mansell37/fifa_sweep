@@ -903,6 +903,18 @@ function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
 // =============================================================
 // BACKUP / RESTORE
 // =============================================================
+window.resetGroupsToDefault = function () {
+    if (!adminMode) { alert('Admin mode required.'); return; }
+    const sizes = TIER_KEYS.map(t => `G${t}: ${DEFAULT_TIERS[t].length}`).join(', ');
+    if (!confirm(`Reset the group roster to the canonical layout (${sizes})?\n\nThis overwrites the server-side tiers. Existing entries and results stay.`)) return;
+    tiers = JSON.parse(JSON.stringify(DEFAULT_TIERS));
+    persistAll();
+    populatePickSelects();
+    if (activeTab === 'tiers') renderTiers();
+    if (activeTab === 'sweep') renderLeaderboard();
+    flashToast('Groups reset to defaults.');
+};
+
 window.exportStateBackup = function () {
     const blob = new Blob([JSON.stringify({ tiers, entries, results, bonus, settings }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
