@@ -9,9 +9,10 @@ Companion sweep app for the FIFA World Cup 2026. Static frontend + tiny Express 
 - Group multipliers: **G1 ×1, G2 ×1.5, G3 ×2, G4 ×4, G5 ×6**
 
 ### Scoring per team
-- **3 pts** per win (group stage, knockouts, and 3rd-place playoff)
-- **1 pt** per group-stage draw
-- Entrant total = sum of all 5 picks (each × that team's group multiplier)
+- **3 pts** per win
+- **1 pt** per draw
+- **0 pts** per loss
+- Entrant total = sum of all 5 picks (each × that team's group multiplier) + bonus points
 - **Tie-breaker:** if two or more entrants tie on total, the **bonus point total** decides
 
 ### Bonus questions (+3 each)

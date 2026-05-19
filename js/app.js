@@ -831,8 +831,9 @@ function renderEmailGuide() {
                 <div class="eg-card eg-scoring-card">
                     <h2>Scoring</h2>
                     <ul class="eg-scoring">
-                        <li><strong>3 pts</strong> per win (group, knockouts &amp; 3rd-place playoff)</li>
-                        <li><strong>1 pt</strong> per group-stage draw</li>
+                        <li><strong>3 pts</strong> per win</li>
+                        <li><strong>1 pt</strong> per draw</li>
+                        <li><strong>0 pts</strong> per loss</li>
                         <li>Each team's total &times; its <strong>group multiplier</strong></li>
                         <li>Total = sum of all 5 picks + bonus points</li>
                         <li><strong>Tie-breaker:</strong> bonus points decide</li>
