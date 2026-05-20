@@ -26,16 +26,18 @@ const ENTRY_FIELD_MAX = 80;
 const TIER_KEYS = [1, 2, 3, 4, 5];
 const PICK_COUNT = 5;
 
-// 48-team roster — must match DEFAULT_TIERS in js/app.js
+// 48-team roster — must match DEFAULT_TIERS in js/app.js.
+// Order within each group is intentionally randomised (not odds-order)
+// so the favourite isn't visually first and picks spread more evenly.
 const DEFAULT_TIERS = {
-  1: ["Spain", "France", "England", "Brazil", "Argentina", "Germany"],
-  2: ["Portugal", "Netherlands", "Norway", "Belgium", "Colombia", "Japan", "Morocco", "USA"],
-  3: ["Uruguay", "Turkey", "Mexico", "Ecuador", "Sweden", "Croatia", "Switzerland",
-      "Austria", "Senegal"],
-  4: ["Czechia", "Canada", "Paraguay", "Scotland", "Ivory Coast", "Bosnia", "Egypt",
-      "Iran", "Algeria", "South Korea", "Ghana", "Australia"],
-  5: ["Tunisia", "DR Congo", "South Africa", "Saudi Arabia", "Panama", "Qatar",
-      "New Zealand", "Iraq", "Cape Verde", "Uzbekistan", "Jordan", "Haiti", "Curacao"],
+  1: ["Germany", "France", "Argentina", "England", "Brazil", "Portugal", "Spain"],
+  2: ["Belgium", "Norway", "USA", "Netherlands", "Morocco", "Japan", "Colombia"],
+  3: ["Switzerland", "Senegal", "Turkey", "Mexico", "Ecuador", "Croatia", "Austria",
+      "Uruguay", "Sweden"],
+  4: ["Canada", "Algeria", "Paraguay", "Czechia", "Australia", "Bosnia", "South Korea",
+      "Egypt", "Ivory Coast", "Iran", "Ghana", "Scotland"],
+  5: ["DR Congo", "Panama", "Uzbekistan", "Jordan", "South Africa", "Qatar",
+      "New Zealand", "Haiti", "Cape Verde", "Tunisia", "Saudi Arabia", "Iraq", "Curacao"],
 };
 
 const DEFAULT_STATE = {
