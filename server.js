@@ -28,8 +28,8 @@ const PICK_COUNT = 5;
 
 // 48-team roster — must match DEFAULT_TIERS in js/app.js
 const DEFAULT_TIERS = {
-  1: ["Spain", "France", "England", "Brazil", "Argentina", "Portugal", "Germany"],
-  2: ["Netherlands", "Norway", "Belgium", "Colombia", "Japan", "Morocco", "USA"],
+  1: ["Spain", "France", "England", "Brazil", "Argentina", "Germany"],
+  2: ["Portugal", "Netherlands", "Norway", "Belgium", "Colombia", "Japan", "Morocco", "USA"],
   3: ["Uruguay", "Turkey", "Mexico", "Ecuador", "Sweden", "Croatia", "Switzerland",
       "Austria", "Senegal"],
   4: ["Czechia", "Canada", "Paraguay", "Scotland", "Ivory Coast", "Bosnia", "Egypt",
