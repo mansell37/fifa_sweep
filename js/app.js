@@ -256,6 +256,7 @@ function setupTabs() {
 }
 
 function activateTab(tab) {
+    if (tab === 'analytics' && !isAnalyticsVisibleToCurrentUser()) tab = 'sweep';
     activeTab = tab;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === `tab-${tab}`));
@@ -264,6 +265,24 @@ function activateTab(tab) {
     if (tab === 'rules') renderRulesBonus();
     if (tab === 'analytics') renderAnalytics();
     if (tab === 'emailguide') renderEmailGuide();
+}
+
+function isAnalyticsVisibleToCurrentUser() {
+    return settings.analyticsVisible === true || adminMode;
+}
+
+// Hide the Analytics tab button from entrants when settings.analyticsVisible is false.
+// Reuses the existing .admin-only CSS rule (hidden unless body.admin-active).
+function applyAnalyticsVisibility() {
+    const btn = document.getElementById('analyticsTabBtn');
+    if (!btn) return;
+    const publicVisible = settings.analyticsVisible === true;
+    btn.classList.toggle('admin-only', !publicVisible);
+    btn.title = publicVisible ? '' : 'Hidden from entrants until competition starts (admin-only)';
+    const cb = document.getElementById('analyticsVisibleToggle');
+    if (cb) cb.checked = publicVisible;
+    // Bounce a non-admin off the analytics tab if it just became hidden.
+    if (activeTab === 'analytics' && !isAnalyticsVisibleToCurrentUser()) activateTab('sweep');
 }
 
 // =============================================================
@@ -653,6 +672,7 @@ function setupAdmin() {
             document.body.classList.remove('admin-active');
             document.getElementById('adminToggle').classList.remove('active');
             renderEntriesList();
+            applyAnalyticsVisibility();
         } else {
             document.getElementById('adminPwModal').classList.add('active');
             document.getElementById('adminPwInput').value = '';
@@ -685,6 +705,7 @@ window.confirmAdminPassword = async function () {
         renderEntriesList();
         renderBonusAdminForm();
         renderSnapshotList();
+        applyAnalyticsVisibility();
     } catch (e) {
         document.getElementById('adminPwError').textContent = 'Verification failed: ' + e.message;
         document.getElementById('adminPwError').style.display = 'block';
@@ -1225,6 +1246,8 @@ async function init() {
     renderLeaderboard();
     renderEntriesList();
     renderRulesBonus();
+    setupAnalyticsVisibilityToggle();
+    applyAnalyticsVisibility();
 
     // Then refresh from server
     if (useServerStorage()) {
@@ -1233,10 +1256,24 @@ async function init() {
             populatePickSelects();
             renderLeaderboard();
             renderEntriesList();
+            applyAnalyticsVisibility();
         }
     }
 
     document.getElementById('footerUpdated').textContent = new Date().toLocaleString();
+}
+
+function setupAnalyticsVisibilityToggle() {
+    const cb = document.getElementById('analyticsVisibleToggle');
+    if (!cb) return;
+    cb.addEventListener('change', () => {
+        if (!adminMode) { alert('Admin mode required.'); cb.checked = !cb.checked; return; }
+        settings.analyticsVisible = cb.checked;
+        save(STORAGE.settings, settings);
+        persistToServer({ settings });
+        applyAnalyticsVisibility();
+        flashToast(cb.checked ? 'Analytics tab shown to entrants.' : 'Analytics tab hidden from entrants.');
+    });
 }
 
 document.addEventListener('DOMContentLoaded', init);

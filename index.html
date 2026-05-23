@@ -20,7 +20,7 @@
                 <button class="tab-btn" data-tab="enter">Enter Team</button>
                 <button class="tab-btn" data-tab="tiers">Groups</button>
                 <button class="tab-btn" data-tab="rules">Rules &amp; Prizes</button>
-                <button class="tab-btn" data-tab="analytics">Analytics</button>
+                <button class="tab-btn" id="analyticsTabBtn" data-tab="analytics">Analytics</button>
                 <button class="tab-btn admin-only" data-tab="emailguide" title="Admin-only printable summary for the welcome email">Email Guide</button>
             </nav>
             <div class="header-actions">
@@ -126,6 +126,14 @@
                 <div class="entries-panel">
                     <h2>Submitted Teams <span id="teamCount" class="badge">0</span></h2>
                     <div id="entriesList" class="entries-list"></div>
+                    <div class="admin-only display-admin-panel" style="margin-top:16px">
+                        <h3 class="bonus-admin-title">&#128065; Display Settings</h3>
+                        <p class="bonus-admin-hint">Hide the Analytics tab from entrants until the competition starts. Admins can always see it.</p>
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                            <input type="checkbox" id="analyticsVisibleToggle">
+                            <span>Show Analytics tab to entrants</span>
+                        </label>
+                    </div>
                     <div class="admin-only backup-panel" style="margin-top:16px">
                         <h3 class="bonus-admin-title">&#128190; Manual Backup &amp; Restore</h3>
                         <p class="bonus-admin-hint">Download a copy of all current state. Use Restore to upload a saved JSON file.</p>
@@ -256,6 +264,6 @@
         <p>World Cup 2026 Sweepstake | <span id="footerUpdated">--</span></p>
     </footer>
 
-    <script src="js/app.js?v=13"></script>
+    <script src="js/app.js?v=14"></script>
 </body>
 </html>
