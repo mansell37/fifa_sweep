@@ -369,6 +369,67 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
     color: var(--gray-600);
     margin: 6px 0 14px;
 }
+
+/* Prize pool box (Enter Team tab) */
+.prize-pool-box {
+    background: linear-gradient(135deg, var(--wc-navy-deep), var(--wc-navy));
+    color: white;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    border: 1px solid var(--wc-gold);
+    box-shadow: var(--shadow-sm);
+}
+.prize-pool-box .pp-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+.prize-pool-box .pp-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--wc-gold);
+}
+.prize-pool-box .pp-total {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1;
+}
+.prize-pool-box .pp-sub {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 2px 0 10px;
+}
+.prize-pool-box .pp-splits {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 8px;
+}
+.prize-pool-box .pp-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 13px;
+}
+.prize-pool-box .pp-place { font-weight: 500; }
+.prize-pool-box .pp-pct {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    font-variant-numeric: tabular-nums;
+}
+.prize-pool-box .pp-amt {
+    font-weight: 700;
+    color: var(--wc-gold);
+    font-variant-numeric: tabular-nums;
+    min-width: 56px;
+    text-align: right;
+}
 .bonus-rule-hint { margin-top: 0; }
 
 .form-row {
