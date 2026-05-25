@@ -51,6 +51,16 @@ const BONUS_QUESTIONS = [
 ];
 const BONUS_POINTS_PER_CORRECT = 3;
 
+// Prize pool: $10 per entry, split by finishing position.
+// Percentages mirror the Rules & Prizes tab.
+const ENTRY_FEE = 10;
+const PRIZE_SPLITS = [
+    { label: '1st place', pct: 0.60 },
+    { label: '2nd place', pct: 0.25 },
+    { label: '3rd place', pct: 0.10 },
+    { label: 'Wooden spoon', pct: 0.05 },
+];
+
 // =============================================================
 // APPLICATION STATE
 // =============================================================
@@ -467,10 +477,38 @@ function bonusAnswerCell(entry, q) {
 // =============================================================
 // RENDER: ENTRIES LIST (Enter Team panel)
 // =============================================================
+function formatMoney(n) {
+    const v = Math.round(n * 100) / 100;
+    return '$' + (Number.isInteger(v) ? String(v) : v.toFixed(2));
+}
+
+function renderPrizePool() {
+    const box = document.getElementById('prizePoolBox');
+    if (!box) return;
+    const count = entries.length;
+    const total = count * ENTRY_FEE;
+    const splits = PRIZE_SPLITS.map(s => `
+        <div class="pp-row">
+            <span class="pp-place">${s.label}</span>
+            <span class="pp-pct">${Math.round(s.pct * 100)}%</span>
+            <span class="pp-amt">${formatMoney(total * s.pct)}</span>
+        </div>
+    `).join('');
+    box.innerHTML = `
+        <div class="pp-top">
+            <span class="pp-title">&#127942; Prize Pool</span>
+            <span class="pp-total">${formatMoney(total)}</span>
+        </div>
+        <div class="pp-sub">${count} ${count === 1 ? 'entry' : 'entries'} &times; ${formatMoney(ENTRY_FEE)} each</div>
+        <div class="pp-splits">${splits}</div>
+    `;
+}
+
 function renderEntriesList() {
     const list = document.getElementById('entriesList');
     const count = document.getElementById('teamCount');
     count.textContent = entries.length;
+    renderPrizePool();
     if (entries.length === 0) {
         list.innerHTML = `<p class="empty-cell">No teams submitted yet.</p>`;
         return;
