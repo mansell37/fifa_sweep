@@ -879,7 +879,7 @@ function renderEmailGuide() {
                     <ol class="eg-steps">
                         <li>Open <strong>${escapeHtml(siteUrl)}</strong></li>
                         <li>Click the <strong>Enter Team</strong> tab</li>
-                        <li>Enter your <strong>name</strong> and a <strong>fun team name</strong></li>
+                        <li>Enter your <strong>name</strong> and a <strong>team name</strong></li>
                         <li>Pick <strong>one team</strong> from each of the 5 groups</li>
                         <li>Answer the <strong>3 bonus questions</strong> (Yes / No)</li>
                         <li>Click <strong>Submit Team</strong> — done!</li>
