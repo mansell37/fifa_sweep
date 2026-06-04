@@ -289,7 +289,7 @@ function digestEmailHtml(state, dateLabel) {
           <th style="padding:6px 8px">Entrant</th>
           <th style="padding:6px 8px">Team name</th>
           <th style="padding:6px 8px">Picks (G1 / G2 / G3 / G4 / G5)</th>
-          <th style="padding:6px 8px">Bonus (300+ / Cont. Euro / Aus)</th>
+          <th style="padding:6px 8px">Bonus (300+ / Continental Euro / Aus)</th>
           <th style="padding:6px 8px">Submitted</th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -314,7 +314,7 @@ function digestEmailText(state, dateLabel) {
     const picks = (e.picks || []).map((p) => p || "—").join(" / ");
     const bonus = [ba.goalsOver250 || "—", ba.winnerEuropean || "—", ba.australiaThroughGroup || "—"].join(" / ");
     const submitted = new Date(e.createdAt || 0).toISOString().slice(0, 10);
-    return `${i + 1}. ${e.entrant} — "${e.team}"\n   Picks: ${picks}\n   Bonus (300+/Cont.Euro/Aus): ${bonus}\n   Submitted: ${submitted}`;
+    return `${i + 1}. ${e.entrant} — "${e.team}"\n   Picks: ${picks}\n   Bonus (300+/Continental Euro/Aus): ${bonus}\n   Submitted: ${submitted}`;
   }).join("\n\n");
   return `WC Sweep — Daily Roster (${dateLabel})\nTotal entries: ${entries.length}\n\n${lines}\n\nFull state JSON attached for backup.`;
 }
