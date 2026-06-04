@@ -192,7 +192,7 @@ function entryEmailHtml(entry, state) {
     <h3 style="color:#0a1a3a;margin:16px 0 6px">Bonus answers</h3>
     <p style="margin:0">
       300+ goals (104 matches): <strong>${escHtml(a.goalsOver250 || "—")}</strong><br>
-      Tournament winner European: <strong>${escHtml(a.winnerEuropean || "—")}</strong><br>
+      Tournament winner from continental Europe: <strong>${escHtml(a.winnerEuropean || "—")}</strong><br>
       Australia through group stage: <strong>${escHtml(a.australiaThroughGroup || "—")}</strong>
     </p>
     <p style="margin-top:18px;color:#4b5563">Total entries now: <strong>${state.entries.length}</strong></p>
@@ -215,7 +215,7 @@ ${picks}
 
 Bonus answers:
   300+ goals (104 matches): ${a.goalsOver250 || "—"}
-  Tournament winner European: ${a.winnerEuropean || "—"}
+  Tournament winner from continental Europe: ${a.winnerEuropean || "—"}
   Australia through group stage: ${a.australiaThroughGroup || "—"}
 
 Total entries now: ${state.entries.length}
@@ -289,7 +289,7 @@ function digestEmailHtml(state, dateLabel) {
           <th style="padding:6px 8px">Entrant</th>
           <th style="padding:6px 8px">Team name</th>
           <th style="padding:6px 8px">Picks (G1 / G2 / G3 / G4 / G5)</th>
-          <th style="padding:6px 8px">Bonus (300+ / Euro / Aus)</th>
+          <th style="padding:6px 8px">Bonus (300+ / Cont. Euro / Aus)</th>
           <th style="padding:6px 8px">Submitted</th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -314,7 +314,7 @@ function digestEmailText(state, dateLabel) {
     const picks = (e.picks || []).map((p) => p || "—").join(" / ");
     const bonus = [ba.goalsOver250 || "—", ba.winnerEuropean || "—", ba.australiaThroughGroup || "—"].join(" / ");
     const submitted = new Date(e.createdAt || 0).toISOString().slice(0, 10);
-    return `${i + 1}. ${e.entrant} — "${e.team}"\n   Picks: ${picks}\n   Bonus (300+/Euro/Aus): ${bonus}\n   Submitted: ${submitted}`;
+    return `${i + 1}. ${e.entrant} — "${e.team}"\n   Picks: ${picks}\n   Bonus (300+/Cont.Euro/Aus): ${bonus}\n   Submitted: ${submitted}`;
   }).join("\n\n");
   return `WC Sweep — Daily Roster (${dateLabel})\nTotal entries: ${entries.length}\n\n${lines}\n\nFull state JSON attached for backup.`;
 }

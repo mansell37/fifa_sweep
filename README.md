@@ -17,7 +17,7 @@ Companion sweep app for the FIFA World Cup 2026. Static frontend + tiny Express 
 
 ### Bonus questions (+3 each)
 1. Will there be 300 or more goals in the tournament? (104 matches) (Y/N)
-2. Will the tournament winner be a European team? (Y/N)
+2. Will the tournament winner be from continental Europe? (England & Scotland excluded) (Y/N)
 3. Will Australia make it out of the group stage? (Y/N)
 
 Max bonus: 9 pts.

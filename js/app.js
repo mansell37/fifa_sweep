@@ -46,7 +46,7 @@ const KO_ROUNDS = [
 
 const BONUS_QUESTIONS = [
     { key: 'goalsOver250', label: 'Will there be 300 or more goals in the tournament? (104 matches)', type: 'yn', short: '300+ goals', col: '300+?' },
-    { key: 'winnerEuropean', label: 'Will the tournament winner be a European team?', type: 'yn', short: 'European winner', col: 'Euro?' },
+    { key: 'winnerEuropean', label: 'Will the tournament winner be from continental Europe? (England & Scotland excluded)', type: 'yn', short: 'Continental Euro winner', col: 'Cont. Euro?' },
     { key: 'australiaThroughGroup', label: 'Will Australia make it out of the group stage?', type: 'yn', short: 'Aus through groups', col: 'Aus?' },
 ];
 const BONUS_POINTS_PER_CORRECT = 3;
@@ -680,7 +680,7 @@ function renderAnalytics() {
         <div class="analytics-card">
             <h3>Bonus question consensus</h3>
             <div class="analytics-stat-row"><span>300+ goals: Yes / No</span><span class="stat-val">${goalsY} / ${goalsN}</span></div>
-            <div class="analytics-stat-row"><span>European winner: Yes / No</span><span class="stat-val">${europeanY} / ${europeanN}</span></div>
+            <div class="analytics-stat-row"><span>Continental European winner: Yes / No</span><span class="stat-val">${europeanY} / ${europeanN}</span></div>
             <div class="analytics-stat-row"><span>Australia through groups: Yes / No</span><span class="stat-val">${ausY} / ${ausN}</span></div>
         </div>
 
