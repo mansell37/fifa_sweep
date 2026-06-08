@@ -550,7 +550,7 @@ function renderTiers() {
                 ${tiers[t].map(team => `
                     <div class="tier-team-row">
                         <span>${escapeHtml(team)}</span>
-                        <span class="pick-count">${pickCounts[team] || 0} picks · ${formatPts(teamRawPoints(team) * TIER_MULTIPLIERS[t])} pts</span>
+                        <span class="pick-count"><span class="admin-only">${pickCounts[team] || 0} picks · </span>${formatPts(teamRawPoints(team) * TIER_MULTIPLIERS[t])} pts</span>
                     </div>
                 `).join('')}
             </div>
