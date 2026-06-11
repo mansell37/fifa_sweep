@@ -983,7 +983,7 @@ function sydneyDateKey(utcStr) {
 }
 
 function stageLabel(m) {
-    if (m.stage === 'group') return `Group ${m.group}`;
+    if (m.stage === 'group') return `Group ${m.group || '—'}`;
     return ({ r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-final',
               sf: 'Semi-final', final: 'Final', '3rd': '3rd-place Playoff' })[m.stage] || m.stage;
 }
@@ -1396,6 +1396,9 @@ function saveResultsFromModal() {
             sf: row.querySelector('[data-field=sf]').checked,
             final: row.querySelector('[data-field=final]').checked,
             thirdPlace: row.querySelector('[data-field=thirdPlace]').checked,
+            // Flag this team as admin-authoritative so the ESPN-driven derive
+            // step on the server won't overwrite the manual entry.
+            manuallyOverridden: true,
         };
     });
     persistAll();

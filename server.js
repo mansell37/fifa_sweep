@@ -53,7 +53,7 @@ const DEFAULT_STATE = {
 const ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard";
 const TOURNAMENT_START = "20260611";
 const TOURNAMENT_END   = "20260719";
-const POLL_INTERVAL_MS = 30 * 60 * 1000;   // 30 min
+const POLL_INTERVAL_MS = 5 * 60 * 1000;    // 5 min
 const POLL_QUIET_WINDOW_HRS = 8;           // skip if no scheduled match within ±8h
 
 
@@ -414,6 +414,26 @@ function espnStageFromType(slug) {
   return "group";
 }
 
+// Map ESPN's team names back to the canonical names used in our roster.
+const TEAM_NAME_ALIASES = {
+  "United States": "USA", "USA": "USA",
+  "Korea Republic": "South Korea", "Republic of Korea": "South Korea", "South Korea": "South Korea",
+  "Czech Republic": "Czechia", "Czechia": "Czechia",
+  "Bosnia and Herzegovina": "Bosnia", "Bosnia & Herzegovina": "Bosnia", "Bosnia-Herzegovina": "Bosnia", "Bosnia": "Bosnia",
+  "Côte d'Ivoire": "Ivory Coast", "Cote d'Ivoire": "Ivory Coast", "Ivory Coast": "Ivory Coast",
+  "Cape Verde Islands": "Cape Verde", "Cabo Verde": "Cape Verde", "Cape Verde": "Cape Verde",
+  "Curaçao": "Curacao", "Curacao": "Curacao",
+  "DR Congo": "DR Congo", "Congo DR": "DR Congo", "Democratic Republic of the Congo": "DR Congo", "DR Congo (Kinshasa)": "DR Congo",
+  "Türkiye": "Turkey", "Turkiye": "Turkey", "Turkey": "Turkey",
+  "Iran": "Iran", "IR Iran": "Iran",
+  "Saudi Arabia": "Saudi Arabia", "KSA": "Saudi Arabia",
+};
+function normalizeTeamName(espnName) {
+  if (!espnName) return "";
+  const key = String(espnName).trim();
+  return TEAM_NAME_ALIASES[key] || key;
+}
+
 function mapEspnEvent(ev) {
   try {
     const comp = (ev.competitions && ev.competitions[0]) || {};
@@ -421,27 +441,46 @@ function mapEspnEvent(ev) {
     if (competitors.length < 2) return null;
     const home = competitors.find((c) => c.homeAway === "home") || competitors[0];
     const away = competitors.find((c) => c.homeAway === "away") || competitors[1];
-    const statusName = ev.status && ev.status.type && ev.status.type.name ? String(ev.status.type.name) : "";
+
+    // Status: use type.state ("pre" / "in" / "post") as the canonical source.
+    const statusType = (ev.status && ev.status.type) || {};
+    const stateField = String(statusType.state || "").toLowerCase();
+    const completed = !!statusType.completed;
     let status = "scheduled";
-    if (statusName === "STATUS_FINAL" || statusName === "STATUS_FULL_TIME") status = "finished";
-    else if (statusName.startsWith("STATUS_") && !statusName.includes("SCHEDULED")) status = "live";
+    if (stateField === "post" || completed) status = "finished";
+    else if (stateField === "in") status = "live";
+
     const homeScore = home && home.score !== undefined && home.score !== "" ? Number(home.score) : null;
     const awayScore = away && away.score !== undefined && away.score !== "" ? Number(away.score) : null;
-    // Group letter — ESPN puts it in different places depending on stage.
+
+    // Group letter — try several fields ESPN has used over the years; fall back to null.
     let group = null;
-    const seasonType = (ev.season && ev.season.slug) || "";
-    const notes = (comp.notes && comp.notes[0] && comp.notes[0].headline) || "";
-    const noteMatch = notes.match(/Group\s+([A-L])/i);
-    if (noteMatch) group = noteMatch[1].toUpperCase();
-    const stage = espnStageFromType(seasonType || notes);
+    const noteHeadlines = (comp.notes || []).map((n) => n && n.headline).filter(Boolean);
+    const candidateStrings = [
+      ...noteHeadlines,
+      ev.season && ev.season.displayName,
+      ev.season && ev.season.slug,
+      comp.competitionType && comp.competitionType.displayName,
+      home && home.team && home.team.groupSlug,
+      home && home.team && home.team.groupName,
+    ].filter(Boolean).map(String);
+    for (const s of candidateStrings) {
+      const m = s.match(/Group\s+([A-L])\b/i);
+      if (m) { group = m[1].toUpperCase(); break; }
+    }
+
+    // Stage: prefer season slug / type, then fall back to note headlines.
+    const stageSrc = (ev.season && ev.season.slug) || (comp.competitionType && comp.competitionType.slug) || noteHeadlines.join(" ") || "";
+    const stage = espnStageFromType(stageSrc);
+
     return {
       espnId: String(ev.id || ""),
       stage,
       group,
       kickoffUTC: ev.date || null,
       venue: (comp.venue && (comp.venue.fullName || comp.venue.address && `${comp.venue.fullName || ""}`)) || "",
-      home: (home && home.team && (home.team.displayName || home.team.shortDisplayName || home.team.name)) || "",
-      away: (away && away.team && (away.team.displayName || away.team.shortDisplayName || away.team.name)) || "",
+      home: normalizeTeamName((home && home.team && (home.team.displayName || home.team.shortDisplayName || home.team.name)) || ""),
+      away: normalizeTeamName((away && away.team && (away.team.displayName || away.team.shortDisplayName || away.team.name)) || ""),
       scoreHome: Number.isFinite(homeScore) ? homeScore : null,
       scoreAway: Number.isFinite(awayScore) ? awayScore : null,
       status,
@@ -506,6 +545,45 @@ function nearMatchWindow(matches) {
   });
 }
 
+// Derive each team's group W/D/L counts + knockout flags from the finished
+// matches in state. Teams whose existing result has `manuallyOverridden` are
+// preserved verbatim — admin edits are authoritative for those teams.
+function emptyResult() {
+  return { groupW: 0, groupD: 0, groupL: 0, r32: false, r16: false, qf: false, sf: false, final: false, thirdPlace: false };
+}
+function deriveResultsFromMatches(matches, existingResults) {
+  const derived = {};
+  for (const m of matches) {
+    if (m.status !== "finished") continue;
+    if (m.scoreHome === null || m.scoreAway === null || m.scoreHome === undefined || m.scoreAway === undefined) continue;
+    const home = String(m.home || "").trim();
+    const away = String(m.away || "").trim();
+    if (!home || !away) continue;
+    if (!derived[home]) derived[home] = emptyResult();
+    if (!derived[away]) derived[away] = emptyResult();
+    if (m.stage === "group") {
+      if (m.scoreHome > m.scoreAway) { derived[home].groupW++; derived[away].groupL++; }
+      else if (m.scoreHome < m.scoreAway) { derived[home].groupL++; derived[away].groupW++; }
+      else { derived[home].groupD++; derived[away].groupD++; }
+    } else if (["r32", "r16", "qf", "sf", "final", "3rd"].includes(m.stage)) {
+      // Knockouts can draw at 90' and go to extra time / penalties — ESPN may report
+      // the final score so equal scores shouldn't happen at the post stage; if it
+      // does (shootouts aren't surfaced in the score), skip rather than guess.
+      if (m.scoreHome === m.scoreAway) continue;
+      const winner = m.scoreHome > m.scoreAway ? home : away;
+      const flagKey = m.stage === "3rd" ? "thirdPlace" : m.stage;
+      derived[winner][flagKey] = true;
+    }
+  }
+  // Merge: derived wins by default; admin-overridden team results stick.
+  const merged = { ...derived };
+  for (const team of Object.keys(existingResults || {})) {
+    const r = existingResults[team];
+    if (r && r.manuallyOverridden) merged[team] = r;
+  }
+  return merged;
+}
+
 let lastEspnPollAt = 0;
 async function pollEspnMatches(force = false) {
   try {
@@ -516,13 +594,16 @@ async function pollEspnMatches(force = false) {
     }
     const fetched = await fetchEspnScoreboard();
     if (fetched.length === 0) return { skipped: "no events returned" };
+    let finishedCount = 0;
     await enqueueWrite(async () => {
       const current = await readState();
       const merged = mergeEspnMatches(current.matches, fetched);
-      await writeState({ ...current, matches: merged });
+      const results = deriveResultsFromMatches(merged, current.results);
+      finishedCount = merged.filter((m) => m.status === "finished").length;
+      await writeState({ ...current, matches: merged, results });
     });
     lastEspnPollAt = Date.now();
-    return { ok: true, fetched: fetched.length };
+    return { ok: true, fetched: fetched.length, finished: finishedCount };
   } catch (e) {
     console.warn("ESPN poll failed:", e.message);
     return { error: e.message };
@@ -629,7 +710,8 @@ app.post("/api/admin/matches/:id/score", requireAdminToken, async (req, res) => 
         if (!Number.isFinite(sh) || !Number.isFinite(sa)) throw new Error("scores must be numbers");
         return { ...m, scoreHome: sh, scoreAway: sa, status: "finished", manuallyOverridden: true };
       });
-      return writeState({ ...current, matches });
+      const results = deriveResultsFromMatches(matches, current.results);
+      return writeState({ ...current, matches, results });
     });
     return res.json({ ok: true, totalMatches: updated.matches.length });
   } catch (e) {
