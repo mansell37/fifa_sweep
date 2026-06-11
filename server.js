@@ -45,8 +45,17 @@ const DEFAULT_STATE = {
   entries: [],
   results: {},
   bonus: { goalsOver250: "", winnerEuropean: "", australiaThroughGroup: "" },
+  matches: [],   // [{ id, espnId, stage, group, kickoffUTC, venue, home, away, scoreHome, scoreAway, status, manuallyOverridden }]
   settings: {},
 };
+
+// ESPN hidden scoreboard API — no auth, returns WC2026 fixtures + scores.
+const ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard";
+const TOURNAMENT_START = "20260611";
+const TOURNAMENT_END   = "20260719";
+const POLL_INTERVAL_MS = 30 * 60 * 1000;   // 30 min
+const POLL_QUIET_WINDOW_HRS = 8;           // skip if no scheduled match within ±8h
+
 
 let writeQueue = Promise.resolve();
 
@@ -60,6 +69,7 @@ function safeStateShape(state) {
   const results = state.results && typeof state.results === "object" ? state.results : {};
   const bonus = state.bonus && typeof state.bonus === "object" ? state.bonus : { ...DEFAULT_STATE.bonus };
   const settings = state.settings && typeof state.settings === "object" ? state.settings : {};
+  const matches = Array.isArray(state.matches) ? state.matches : [];
   const shapedTiers = {};
   for (const t of TIER_KEYS) {
     const raw = tiers[String(t)] ?? tiers[t];
@@ -74,7 +84,31 @@ function safeStateShape(state) {
       winnerEuropean: bonus.winnerEuropean ?? "",
       australiaThroughGroup: bonus.australiaThroughGroup ?? "",
     },
+    matches: matches.map(shapeMatch).filter(Boolean),
     settings,
+  };
+}
+
+function shapeMatch(m) {
+  if (!m || typeof m !== "object") return null;
+  const home = String(m.home || "").trim();
+  const away = String(m.away || "").trim();
+  if (!home || !away) return null;
+  const status = ["scheduled", "live", "finished"].includes(m.status) ? m.status : "scheduled";
+  const sh = m.scoreHome === null || m.scoreHome === undefined || m.scoreHome === "" ? null : Number(m.scoreHome);
+  const sa = m.scoreAway === null || m.scoreAway === undefined || m.scoreAway === "" ? null : Number(m.scoreAway);
+  return {
+    id: String(m.id || m.espnId || `${home}-${away}-${m.kickoffUTC || ""}`),
+    espnId: m.espnId ? String(m.espnId) : null,
+    stage: m.stage || "group",
+    group: m.group || null,
+    kickoffUTC: m.kickoffUTC || null,
+    venue: m.venue || "",
+    home, away,
+    scoreHome: Number.isFinite(sh) ? sh : null,
+    scoreAway: Number.isFinite(sa) ? sa : null,
+    status,
+    manuallyOverridden: !!m.manuallyOverridden,
   };
 }
 
@@ -367,6 +401,134 @@ function enqueueWrite(task) {
   return writeQueue;
 }
 
+// --- ESPN match poller ---------------------------------------------------
+
+function espnStageFromType(slug) {
+  if (!slug) return "group";
+  const s = String(slug).toLowerCase();
+  if (s.includes("final") && !s.includes("semi") && !s.includes("quarter")) return s.includes("third") || s.includes("3rd") ? "3rd" : "final";
+  if (s.includes("semi")) return "sf";
+  if (s.includes("quarter")) return "qf";
+  if (s.includes("round-of-16") || s.includes("r16") || s.includes("round of 16")) return "r16";
+  if (s.includes("round-of-32") || s.includes("r32") || s.includes("round of 32")) return "r32";
+  return "group";
+}
+
+function mapEspnEvent(ev) {
+  try {
+    const comp = (ev.competitions && ev.competitions[0]) || {};
+    const competitors = comp.competitors || [];
+    if (competitors.length < 2) return null;
+    const home = competitors.find((c) => c.homeAway === "home") || competitors[0];
+    const away = competitors.find((c) => c.homeAway === "away") || competitors[1];
+    const statusName = ev.status && ev.status.type && ev.status.type.name ? String(ev.status.type.name) : "";
+    let status = "scheduled";
+    if (statusName === "STATUS_FINAL" || statusName === "STATUS_FULL_TIME") status = "finished";
+    else if (statusName.startsWith("STATUS_") && !statusName.includes("SCHEDULED")) status = "live";
+    const homeScore = home && home.score !== undefined && home.score !== "" ? Number(home.score) : null;
+    const awayScore = away && away.score !== undefined && away.score !== "" ? Number(away.score) : null;
+    // Group letter — ESPN puts it in different places depending on stage.
+    let group = null;
+    const seasonType = (ev.season && ev.season.slug) || "";
+    const notes = (comp.notes && comp.notes[0] && comp.notes[0].headline) || "";
+    const noteMatch = notes.match(/Group\s+([A-L])/i);
+    if (noteMatch) group = noteMatch[1].toUpperCase();
+    const stage = espnStageFromType(seasonType || notes);
+    return {
+      espnId: String(ev.id || ""),
+      stage,
+      group,
+      kickoffUTC: ev.date || null,
+      venue: (comp.venue && (comp.venue.fullName || comp.venue.address && `${comp.venue.fullName || ""}`)) || "",
+      home: (home && home.team && (home.team.displayName || home.team.shortDisplayName || home.team.name)) || "",
+      away: (away && away.team && (away.team.displayName || away.team.shortDisplayName || away.team.name)) || "",
+      scoreHome: Number.isFinite(homeScore) ? homeScore : null,
+      scoreAway: Number.isFinite(awayScore) ? awayScore : null,
+      status,
+    };
+  } catch (e) { return null; }
+}
+
+async function fetchEspnScoreboard(dateRange = `${TOURNAMENT_START}-${TOURNAMENT_END}`) {
+  const url = `${ESPN_SCOREBOARD_URL}?dates=${dateRange}&limit=200`;
+  const res = await fetch(url, { headers: { "User-Agent": "wc-sweep-app/1.0" } });
+  if (!res.ok) throw new Error(`ESPN HTTP ${res.status}`);
+  const json = await res.json();
+  const events = Array.isArray(json.events) ? json.events : [];
+  return events.map(mapEspnEvent).filter(Boolean);
+}
+
+function mergeEspnMatches(existing, fetched) {
+  // Index existing by espnId (fallback: home+away+date)
+  const idx = new Map();
+  for (const m of existing) {
+    const key = m.espnId || `${m.home}|${m.away}|${(m.kickoffUTC || "").slice(0, 10)}`;
+    idx.set(key, m);
+  }
+  const merged = [];
+  for (const f of fetched) {
+    const key = f.espnId || `${f.home}|${f.away}|${(f.kickoffUTC || "").slice(0, 10)}`;
+    const prior = idx.get(key);
+    if (prior && prior.manuallyOverridden) {
+      // Admin override: keep score/status from prior; refresh metadata only
+      merged.push({
+        ...prior,
+        kickoffUTC: f.kickoffUTC || prior.kickoffUTC,
+        venue: f.venue || prior.venue,
+        stage: f.stage || prior.stage,
+        group: f.group || prior.group,
+        espnId: f.espnId || prior.espnId,
+      });
+    } else {
+      // New or auto-tracked: take fresh data from ESPN
+      merged.push({
+        id: prior ? prior.id : `wc_${f.espnId || Math.random().toString(36).slice(2, 10)}`,
+        manuallyOverridden: false,
+        ...f,
+      });
+    }
+    idx.delete(key);
+  }
+  // Preserve any matches in our state that ESPN didn't return (e.g. admin-added)
+  for (const leftover of idx.values()) merged.push(leftover);
+  return merged;
+}
+
+function nearMatchWindow(matches) {
+  if (!matches || matches.length === 0) return true;   // bootstrap case
+  const now = Date.now();
+  const windowMs = POLL_QUIET_WINDOW_HRS * 60 * 60 * 1000;
+  return matches.some((m) => {
+    if (!m.kickoffUTC) return false;
+    const t = Date.parse(m.kickoffUTC);
+    if (!Number.isFinite(t)) return false;
+    return Math.abs(now - t) <= windowMs;
+  });
+}
+
+let lastEspnPollAt = 0;
+async function pollEspnMatches(force = false) {
+  try {
+    const before = await readState();
+    if (!force && before.matches.length > 0 && !nearMatchWindow(before.matches)) {
+      // Quiet window — skip
+      return { skipped: "no match within ±8h" };
+    }
+    const fetched = await fetchEspnScoreboard();
+    if (fetched.length === 0) return { skipped: "no events returned" };
+    await enqueueWrite(async () => {
+      const current = await readState();
+      const merged = mergeEspnMatches(current.matches, fetched);
+      await writeState({ ...current, matches: merged });
+    });
+    lastEspnPollAt = Date.now();
+    return { ok: true, fetched: fetched.length };
+  } catch (e) {
+    console.warn("ESPN poll failed:", e.message);
+    return { error: e.message };
+  }
+}
+
 function requireAdminToken(req, res, next) {
   const token = req.get("X-Admin-Token") || "";
   if (token === ADMIN_TOKEN) return next();
@@ -444,12 +606,43 @@ app.get("/api/state", async (_req, res) => {
   }
 });
 
+// Admin endpoints for the new Matches feature -----------------------------
+
+app.post("/api/admin/matches/refresh", requireAdminToken, async (_req, res) => {
+  const r = await pollEspnMatches(true);
+  return res.json(r);
+});
+
+app.post("/api/admin/matches/:id/score", requireAdminToken, async (req, res) => {
+  const { id } = req.params;
+  const { scoreHome, scoreAway, clearOverride } = req.body || {};
+  try {
+    const updated = await enqueueWrite(async () => {
+      const current = await readState();
+      const matches = current.matches.map((m) => {
+        if (m.id !== id && m.espnId !== id) return m;
+        if (clearOverride) {
+          return { ...m, manuallyOverridden: false };
+        }
+        const sh = Number(scoreHome);
+        const sa = Number(scoreAway);
+        if (!Number.isFinite(sh) || !Number.isFinite(sa)) throw new Error("scores must be numbers");
+        return { ...m, scoreHome: sh, scoreAway: sa, status: "finished", manuallyOverridden: true };
+      });
+      return writeState({ ...current, matches });
+    });
+    return res.json({ ok: true, totalMatches: updated.matches.length });
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+});
+
 app.put("/api/state", requireAdminToken, async (req, res) => {
   const payload = req.body || {};
-  const allowedKeys = ["tiers", "entries", "results", "bonus", "settings"];
+  const allowedKeys = ["tiers", "entries", "results", "bonus", "matches", "settings"];
   const hasAny = allowedKeys.some((k) => Object.prototype.hasOwnProperty.call(payload, k));
   if (!hasAny) {
-    return res.status(400).json({ error: "Provide at least one of tiers, entries, results, bonus, settings." });
+    return res.status(400).json({ error: "Provide at least one of tiers, entries, results, bonus, matches, settings." });
   }
 
   try {
@@ -460,6 +653,7 @@ app.put("/api/state", requireAdminToken, async (req, res) => {
         entries: Object.prototype.hasOwnProperty.call(payload, "entries") ? payload.entries : current.entries,
         results: Object.prototype.hasOwnProperty.call(payload, "results") ? payload.results : current.results,
         bonus: Object.prototype.hasOwnProperty.call(payload, "bonus") ? payload.bonus : current.bonus,
+        matches: Object.prototype.hasOwnProperty.call(payload, "matches") ? payload.matches : current.matches,
         settings: Object.prototype.hasOwnProperty.call(payload, "settings") ? payload.settings : current.settings,
       };
       const next = await writeState(merged);
@@ -532,4 +726,13 @@ app.listen(port, () => {
     console.log("Email notifications: disabled (set RESEND_API_KEY env var to enable)");
   }
   console.log(`Admin token: ${process.env.ADMIN_TOKEN ? "set via env var" : "using fallback default (set ADMIN_TOKEN env var for production)"}`);
+
+  // ESPN match poller — bootstrap fixtures + scores every 30 min during match windows.
+  console.log(`Match poller: ESPN scoreboard every ${POLL_INTERVAL_MS / 60000}m (skips outside ±${POLL_QUIET_WINDOW_HRS}h match window once bootstrapped)`);
+  setInterval(() => pollEspnMatches(false), POLL_INTERVAL_MS);
+  // Kick off immediately so first deploy bootstraps fixtures without waiting.
+  pollEspnMatches(true).then((r) => {
+    if (r.ok) console.log(`Match poller: bootstrapped ${r.fetched} fixtures from ESPN`);
+    else console.log(`Match poller: initial fetch — ${r.skipped || r.error || "no-op"}`);
+  });
 });

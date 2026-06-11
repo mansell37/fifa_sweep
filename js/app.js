@@ -68,6 +68,7 @@ let tiers          = JSON.parse(JSON.stringify(DEFAULT_TIERS));  // { 1..5: [tea
 let entries        = [];
 let results        = {};   // teamName -> { groupW, groupD, groupL, r32, r16, qf, sf, final, thirdPlace }
 let bonus          = { goalsOver250: '', winnerEuropean: '', australiaThroughGroup: '' };
+let matches        = [];   // [{ id, espnId, stage, group, kickoffUTC, venue, home, away, scoreHome, scoreAway, status, manuallyOverridden }]
 let settings       = {};
 let activeTab      = 'sweep';
 let adminMode      = false;
@@ -137,6 +138,7 @@ async function loadFromServer() {
             winnerEuropean: state.bonus.winnerEuropean || '',
             australiaThroughGroup: state.bonus.australiaThroughGroup || '',
         } : { goalsOver250: '', winnerEuropean: '', australiaThroughGroup: '' };
+        matches = Array.isArray(state.matches) ? state.matches : [];
         settings = isObject(state.settings) ? state.settings : {};
         // Mirror to local cache
         save(STORAGE.entries, entries);
@@ -267,10 +269,13 @@ function setupTabs() {
 
 function activateTab(tab) {
     if (tab === 'analytics' && !isAnalyticsVisibleToCurrentUser()) tab = 'sweep';
+    if (tab === 'matches' && !adminMode) tab = 'sweep';
+    if (tab === 'emailguide' && !adminMode) tab = 'sweep';
     activeTab = tab;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === `tab-${tab}`));
     if (tab === 'sweep') renderLeaderboard();
+    if (tab === 'matches') renderMatches();
     if (tab === 'tiers') renderTiers();
     if (tab === 'rules') renderRulesBonus();
     if (tab === 'analytics') renderAnalytics();
@@ -711,6 +716,8 @@ function setupAdmin() {
             document.getElementById('adminToggle').classList.remove('active');
             renderEntriesList();
             applyAnalyticsVisibility();
+            // Bounce off any admin-only tabs the user might be on.
+            if (activeTab === 'matches' || activeTab === 'emailguide') activateTab('sweep');
         } else {
             document.getElementById('adminPwModal').classList.add('active');
             document.getElementById('adminPwInput').value = '';
@@ -744,6 +751,7 @@ window.confirmAdminPassword = async function () {
         renderBonusAdminForm();
         renderSnapshotList();
         applyAnalyticsVisibility();
+        if (activeTab === 'matches') renderMatches();
     } catch (e) {
         document.getElementById('adminPwError').textContent = 'Verification failed: ' + e.message;
         document.getElementById('adminPwError').style.display = 'block';
@@ -934,6 +942,274 @@ function renderEmailGuide() {
         </div>
     `;
 }
+
+// =============================================================
+// RENDER: MATCHES TAB
+// =============================================================
+// Matches data lives in `matches` (loaded from /api/state). The ESPN poller
+// on the server bootstraps it on first run and refreshes scores during
+// match windows. Admin can override any match score via the editor below.
+
+let matchesFilter = 'all';
+
+function setupMatchesFilters() {
+    document.querySelectorAll('#matchesFilters .match-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            matchesFilter = btn.dataset.filter;
+            document.querySelectorAll('#matchesFilters .match-chip').forEach(b => {
+                b.classList.toggle('active', b.dataset.filter === matchesFilter);
+            });
+            renderMatches();
+        });
+    });
+}
+
+function formatLocalTime(utcStr, timeZone, locale) {
+    try {
+        const d = new Date(utcStr);
+        return new Intl.DateTimeFormat(locale, {
+            timeZone, hour: '2-digit', minute: '2-digit', hour12: false,
+        }).format(d);
+    } catch (e) { return '--:--'; }
+}
+
+function formatHeadingDate(utcStr) {
+    const d = new Date(utcStr);
+    return new Intl.DateTimeFormat('en-AU', {
+        timeZone: 'Australia/Sydney',
+        weekday: 'long', day: 'numeric', month: 'long',
+    }).format(d);
+}
+
+function sydneyDateKey(utcStr) {
+    const d = new Date(utcStr);
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Australia/Sydney',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(d);
+    const y = parts.find(p => p.type === 'year').value;
+    const m = parts.find(p => p.type === 'month').value;
+    const day = parts.find(p => p.type === 'day').value;
+    return `${y}-${m}-${day}`;
+}
+
+function stageLabel(m) {
+    if (m.stage === 'group') return `Group ${m.group}`;
+    return ({ r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-final',
+              sf: 'Semi-final', final: 'Final', '3rd': '3rd-place Playoff' })[m.stage] || m.stage;
+}
+
+function matchPasses(m, filter, todayKey) {
+    if (filter === 'all') return true;
+    const k = sydneyDateKey(m.kickoffUTC);
+    if (filter === 'today') return k === todayKey;
+    if (filter === 'upcoming') return m.status !== 'finished';
+    if (filter === 'finished') return m.status === 'finished';
+    return true;
+}
+
+function renderMatches() {
+    const root = document.getElementById('matchesContent');
+    if (!root) return;
+
+    const all = (matches || []).slice().sort((a, b) => (a.kickoffUTC || '').localeCompare(b.kickoffUTC || ''));
+    const todayKey = sydneyDateKey(new Date().toISOString());
+    const filtered = all.filter(m => matchPasses(m, matchesFilter, todayKey));
+
+    if (filtered.length === 0) {
+        const hint = matches.length === 0
+            ? `<p class="empty-cell" style="padding:20px">No matches loaded yet. The server pulls fixtures from ESPN every 30 minutes during match windows.</p>`
+            : `<p class="empty-cell" style="padding:20px">No matches in this view.</p>`;
+        root.innerHTML = hint + adminMatchesToolbar();
+        return;
+    }
+
+    // Group by Sydney calendar date
+    const groups = new Map();
+    for (const m of filtered) {
+        const k = sydneyDateKey(m.kickoffUTC);
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k).push(m);
+    }
+
+    const dayBlocks = [...groups.entries()].map(([dateKey, list]) => {
+        const heading = formatHeadingDate(list[0].kickoffUTC);
+        const isToday = dateKey === todayKey;
+        const rows = list.map(matchCardHtml).join('');
+        return `
+            <div class="match-day">
+                <div class="match-day-head">
+                    ${isToday ? '<span class="match-today-pill">Today</span>' : ''}
+                    <span class="match-day-title">${escapeHtml(heading)}</span>
+                    <span class="match-day-count">${list.length} match${list.length === 1 ? '' : 'es'}</span>
+                </div>
+                ${rows}
+            </div>
+        `;
+    }).join('');
+
+    root.innerHTML = adminMatchesToolbar() + dayBlocks;
+    attachMatchAdminHandlers();
+}
+
+function matchCardHtml(m) {
+    const sydTime = m.kickoffUTC ? formatLocalTime(m.kickoffUTC, 'Australia/Sydney', 'en-AU') : '--:--';
+    const lonTime = m.kickoffUTC ? formatLocalTime(m.kickoffUTC, 'Europe/London', 'en-GB') : '--:--';
+    const finished = m.status === 'finished';
+    const live = m.status === 'live';
+    const homeWin = finished && m.scoreHome > m.scoreAway;
+    const awayWin = finished && m.scoreAway > m.scoreHome;
+    const draw = finished && m.scoreHome === m.scoreAway;
+    const totalGoals = finished ? (m.scoreHome + m.scoreAway) : null;
+    const statusPill = finished
+        ? `<span class="match-status match-status-final">Final</span>`
+        : live
+            ? `<span class="match-status match-status-live">Live</span>`
+            : `<span class="match-status match-status-sched">Scheduled</span>`;
+    const goalsBadge = finished
+        ? `<span class="match-goals">${totalGoals} goal${totalGoals === 1 ? '' : 's'}</span>`
+        : '';
+    const scoreCell = finished || live
+        ? `<span class="match-score">${m.scoreHome ?? 0} – ${m.scoreAway ?? 0}</span>`
+        : `<span class="match-vs">vs</span>`;
+    const overridePill = m.manuallyOverridden
+        ? `<span class="match-override-pill" title="Manually entered by admin. Auto-poll won't overwrite this score.">Admin</span>`
+        : '';
+    const editBtn = `<button class="match-edit-btn admin-only" data-match-edit="${escapeAttr(m.id)}" title="Enter or correct the score">${finished ? 'Edit' : 'Set score'}</button>`;
+    return `
+        <div class="match-card ${finished ? 'is-final' : ''}" data-match-id="${escapeAttr(m.id)}">
+            <div class="match-meta-row">
+                ${statusPill}
+                <span class="match-stage">${escapeHtml(stageLabel(m))}</span>
+                ${overridePill}
+                ${goalsBadge}
+            </div>
+            <div class="match-teams">
+                <div class="match-team ${homeWin ? 'is-winner' : ''} ${draw ? 'is-draw' : ''}">
+                    <span class="match-team-name">${escapeHtml(m.home)}</span>
+                    ${homeWin ? '<span class="match-winner-pill">Winner</span>' : ''}
+                </div>
+                <div class="match-score-cell">${scoreCell}</div>
+                <div class="match-team ${awayWin ? 'is-winner' : ''} ${draw ? 'is-draw' : ''}">
+                    <span class="match-team-name">${escapeHtml(m.away)}</span>
+                    ${awayWin ? '<span class="match-winner-pill">Winner</span>' : ''}
+                </div>
+            </div>
+            <div class="match-footer">
+                <div class="match-times">
+                    <span class="match-tz"><strong>SYD</strong> ${sydTime}</span>
+                    <span class="match-tz"><strong>LON</strong> ${lonTime}</span>
+                </div>
+                <div class="match-venue">${escapeHtml(m.venue || '')}</div>
+                ${editBtn}
+            </div>
+        </div>
+    `;
+}
+
+function adminMatchesToolbar() {
+    return `
+        <div class="match-admin-toolbar admin-only">
+            <button class="btn btn-small" id="matchesRefreshBtn" title="Pull fixtures + scores from ESPN now">&#8635; Refresh from ESPN</button>
+            <span class="match-admin-hint">Scores auto-update every 30 min during match windows. Admin-edited scores are kept on subsequent polls.</span>
+        </div>
+    `;
+}
+
+function attachMatchAdminHandlers() {
+    document.querySelectorAll('[data-match-edit]').forEach((btn) => {
+        btn.addEventListener('click', () => openMatchScoreEditor(btn.dataset.matchEdit));
+    });
+    const refreshBtn = document.getElementById('matchesRefreshBtn');
+    if (refreshBtn) refreshBtn.addEventListener('click', refreshMatchesFromEspn);
+}
+
+async function refreshMatchesFromEspn() {
+    const btn = document.getElementById('matchesRefreshBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Refreshing…'; }
+    try {
+        const res = await fetch('/api/admin/matches/refresh', { method: 'POST', headers: adminHeaders() });
+        const out = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
+        await loadFromServer();
+        renderMatches();
+        flashToast(out.ok ? `Refreshed ${out.fetched} matches.` : (out.skipped || 'Nothing to refresh.'));
+    } catch (e) {
+        alert('Refresh failed: ' + e.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '↻ Refresh from ESPN'; }
+    }
+}
+
+function openMatchScoreEditor(matchId) {
+    const m = matches.find((x) => x.id === matchId);
+    if (!m) return;
+    const modal = document.getElementById('matchScoreModal');
+    if (!modal) return;
+    document.getElementById('matchScoreModalTitle').textContent = `${m.home} vs ${m.away}`;
+    document.getElementById('matchScoreModalMeta').textContent =
+        `${stageLabel(m)} · ${m.kickoffUTC ? formatHeadingDate(m.kickoffUTC) + ', ' + formatLocalTime(m.kickoffUTC, 'Australia/Sydney', 'en-AU') + ' SYD' : ''}`;
+    document.getElementById('matchScoreHomeLabel').textContent = m.home;
+    document.getElementById('matchScoreAwayLabel').textContent = m.away;
+    document.getElementById('matchScoreHomeInput').value = m.scoreHome ?? '';
+    document.getElementById('matchScoreAwayInput').value = m.scoreAway ?? '';
+    document.getElementById('matchScoreModal').dataset.matchId = matchId;
+    const clearBtn = document.getElementById('matchScoreClearBtn');
+    clearBtn.style.display = m.manuallyOverridden ? 'inline-block' : 'none';
+    modal.classList.add('active');
+}
+
+window.closeMatchScoreModal = function () {
+    document.getElementById('matchScoreModal').classList.remove('active');
+};
+
+window.saveMatchScore = async function () {
+    const modal = document.getElementById('matchScoreModal');
+    const id = modal.dataset.matchId;
+    const scoreHome = parseInt(document.getElementById('matchScoreHomeInput').value, 10);
+    const scoreAway = parseInt(document.getElementById('matchScoreAwayInput').value, 10);
+    if (!Number.isFinite(scoreHome) || !Number.isFinite(scoreAway) || scoreHome < 0 || scoreAway < 0) {
+        alert('Enter both scores as non-negative numbers.');
+        return;
+    }
+    try {
+        const res = await fetch(`/api/admin/matches/${encodeURIComponent(id)}/score`, {
+            method: 'POST',
+            headers: adminHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ scoreHome, scoreAway }),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        await loadFromServer();
+        closeMatchScoreModal();
+        renderMatches();
+        flashToast('Score saved.');
+    } catch (e) {
+        alert('Save failed: ' + e.message);
+    }
+};
+
+window.clearMatchOverride = async function () {
+    const modal = document.getElementById('matchScoreModal');
+    const id = modal.dataset.matchId;
+    if (!confirm('Clear admin override? The auto-poller will overwrite this score next time it runs.')) return;
+    try {
+        const res = await fetch(`/api/admin/matches/${encodeURIComponent(id)}/score`, {
+            method: 'POST',
+            headers: adminHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ clearOverride: true }),
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        await loadFromServer();
+        closeMatchScoreModal();
+        renderMatches();
+        flashToast('Override cleared.');
+    } catch (e) {
+        alert('Failed: ' + e.message);
+    }
+};
 
 // =============================================================
 // ADMIN: BONUS ANSWERS FORM (in Enter tab)
@@ -1252,6 +1528,7 @@ async function init() {
     setupEntryForm();
     setupResultsEditor();
     setupSnapshotPanel();
+    setupMatchesFilters();
     // Restore admin mode if a stored token is still valid
     if (useServerStorage() && getAdminToken()) {
         try {

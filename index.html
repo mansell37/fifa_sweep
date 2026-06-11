@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Cup 2026 Sweepstake</title>
-    <link rel="stylesheet" href="css/style.css?v=14">
+    <link rel="stylesheet" href="css/style.css?v=15">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -17,6 +17,7 @@
             </div>
             <nav class="nav-tabs" id="navTabs">
                 <button class="tab-btn active" data-tab="sweep">Leaderboard</button>
+                <button class="tab-btn admin-only" data-tab="matches" title="Admin-only schedule view with ESPN auto-updates and per-match score override">Match Schedule</button>
                 <button class="tab-btn" data-tab="enter">Enter Team</button>
                 <button class="tab-btn" data-tab="tiers">Groups</button>
                 <button class="tab-btn" data-tab="rules">Rules &amp; Prizes</button>
@@ -170,6 +171,20 @@
             </div>
         </section>
 
+        <!-- ============ MATCHES TAB ============ -->
+        <section id="tab-matches" class="tab-content">
+            <div class="matches-header">
+                <h2>Match Schedule</h2>
+                <div class="matches-filters" id="matchesFilters">
+                    <button class="match-chip active" data-filter="all">All</button>
+                    <button class="match-chip" data-filter="today">Today</button>
+                    <button class="match-chip" data-filter="upcoming">Upcoming</button>
+                    <button class="match-chip" data-filter="finished">Finished</button>
+                </div>
+            </div>
+            <div id="matchesContent"></div>
+        </section>
+
         <!-- ============ TIERS TAB ============ -->
         <section id="tab-tiers" class="tab-content">
             <div class="groups-header">
@@ -261,10 +276,35 @@
         </div>
     </div>
 
+    <!-- Match score editor modal (admin) -->
+    <div class="modal-overlay" id="matchScoreModal">
+        <div class="modal">
+            <h3 id="matchScoreModalTitle">Edit score</h3>
+            <p class="modal-hint" id="matchScoreModalMeta"></p>
+            <div class="match-score-inputs">
+                <div class="match-score-input-row">
+                    <label id="matchScoreHomeLabel">Home</label>
+                    <input type="number" id="matchScoreHomeInput" min="0" max="20" inputmode="numeric">
+                </div>
+                <div class="match-score-input-sep">–</div>
+                <div class="match-score-input-row">
+                    <label id="matchScoreAwayLabel">Away</label>
+                    <input type="number" id="matchScoreAwayInput" min="0" max="20" inputmode="numeric">
+                </div>
+            </div>
+            <p class="modal-hint" style="margin-top:8px;font-size:12px">Saving marks the score as admin-set. The 30-min ESPN poller will not overwrite it unless you Clear Override.</p>
+            <div class="modal-actions">
+                <button class="btn btn-submit" onclick="saveMatchScore()">Save score</button>
+                <button class="btn btn-cancel" onclick="closeMatchScoreModal()">Cancel</button>
+                <button class="btn btn-small" id="matchScoreClearBtn" onclick="clearMatchOverride()" style="display:none;margin-left:auto">Clear override</button>
+            </div>
+        </div>
+    </div>
+
     <footer class="site-footer">
         <p>World Cup 2026 Sweepstake | <span id="footerUpdated">--</span></p>
     </footer>
 
-    <script src="js/app.js?v=16"></script>
+    <script src="js/app.js?v=17"></script>
 </body>
 </html>
