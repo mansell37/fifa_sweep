@@ -293,10 +293,31 @@
         </div>
     </div>
 
+    <!-- Edit entry modal (admin) -->
+    <div class="modal-overlay" id="editEntryModal">
+        <div class="modal">
+            <h3>Edit entry</h3>
+            <p class="modal-hint">Fix a typo in the entrant or team name. Picks and bonus answers are unchanged.</p>
+            <div class="form-row" style="margin-top:8px">
+                <label for="editEntryEntrantInput">Entrant name</label>
+                <input type="text" id="editEntryEntrantInput" maxlength="80">
+            </div>
+            <div class="form-row">
+                <label for="editEntryTeamInput">Team name</label>
+                <input type="text" id="editEntryTeamInput" maxlength="80">
+            </div>
+            <p class="modal-hint" style="font-size:12px;margin-top:8px"><strong>Picks:</strong> <span id="editEntryPicksPreview">—</span></p>
+            <div class="modal-actions">
+                <button class="btn btn-submit" onclick="saveEditEntry()">Save</button>
+                <button class="btn btn-cancel" onclick="closeEditEntryModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <footer class="site-footer">
         <p>World Cup 2026 Sweepstake | <span id="footerUpdated">--</span></p>
     </footer>
 
-    <script src="js/app.js?v=19"></script>
+    <script src="js/app.js?v=20"></script>
 </body>
 </html>

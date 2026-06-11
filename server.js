@@ -689,6 +689,43 @@ app.get("/api/state", async (_req, res) => {
 
 // Admin endpoints for the new Matches feature -----------------------------
 
+// Edit an existing entry — atomic patch so admin edits don't race with
+// new submissions or other admin actions. Currently accepts entrant + team
+// name only; could extend to picks / bonusAnswers later if needed.
+app.post("/api/admin/entries/:id", requireAdminToken, async (req, res) => {
+  const { id } = req.params;
+  const { entrant, team } = req.body || {};
+  const trimmedEntrant = entrant === undefined ? undefined : String(entrant).trim();
+  const trimmedTeam = team === undefined ? undefined : String(team).trim();
+  if (trimmedEntrant !== undefined && (!trimmedEntrant || trimmedEntrant.length > ENTRY_FIELD_MAX)) {
+    return res.status(400).json({ error: "entrant must be 1–" + ENTRY_FIELD_MAX + " chars" });
+  }
+  if (trimmedTeam !== undefined && (!trimmedTeam || trimmedTeam.length > ENTRY_FIELD_MAX)) {
+    return res.status(400).json({ error: "team must be 1–" + ENTRY_FIELD_MAX + " chars" });
+  }
+  try {
+    let touched = false;
+    await enqueueWrite(async () => {
+      const current = await readState();
+      const entries = current.entries.map((e) => {
+        if (e.id !== id) return e;
+        touched = true;
+        return {
+          ...e,
+          ...(trimmedEntrant !== undefined ? { entrant: trimmedEntrant } : {}),
+          ...(trimmedTeam !== undefined ? { team: trimmedTeam } : {}),
+        };
+      });
+      if (!touched) return;
+      await writeState({ ...current, entries });
+    });
+    if (!touched) return res.status(404).json({ error: "entry not found" });
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 app.post("/api/admin/matches/refresh", requireAdminToken, async (_req, res) => {
   const r = await pollEspnMatches(true);
   return res.json(r);

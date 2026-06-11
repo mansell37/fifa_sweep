@@ -350,6 +350,52 @@ function setupEntryForm() {
     });
 }
 
+window.openEditEntryModal = function (id) {
+    const en = entries.find(e => e.id === id);
+    if (!en) return;
+    const modal = document.getElementById('editEntryModal');
+    if (!modal) return;
+    document.getElementById('editEntryEntrantInput').value = en.entrant || '';
+    document.getElementById('editEntryTeamInput').value = en.team || '';
+    document.getElementById('editEntryPicksPreview').textContent = en.picks.filter(Boolean).join(' · ') || '(no picks)';
+    modal.dataset.entryId = id;
+    modal.classList.add('active');
+    setTimeout(() => document.getElementById('editEntryTeamInput').focus(), 50);
+};
+
+window.closeEditEntryModal = function () {
+    document.getElementById('editEntryModal').classList.remove('active');
+};
+
+window.saveEditEntry = async function () {
+    const modal = document.getElementById('editEntryModal');
+    const id = modal.dataset.entryId;
+    const entrant = document.getElementById('editEntryEntrantInput').value.trim();
+    const team = document.getElementById('editEntryTeamInput').value.trim();
+    if (!entrant || !team) {
+        alert('Both fields are required.');
+        return;
+    }
+    try {
+        const res = await fetch(`/api/admin/entries/${encodeURIComponent(id)}`, {
+            method: 'POST',
+            headers: adminHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ entrant, team }),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        await loadFromServer();
+        closeEditEntryModal();
+        renderEntriesList();
+        renderLeaderboard();
+        flashToast('Entry updated.');
+    } catch (e) {
+        alert('Save failed: ' + e.message);
+    }
+};
+
 function deleteEntry(id) {
     if (!confirm('Delete this entry?')) return;
     entries = entries.filter(e => e.id !== id);
@@ -516,6 +562,7 @@ function renderEntriesList() {
                 <div class="entry-picks">${en.picks.map(p => escapeHtml(p || '—')).join(' · ')}</div>
             </div>
             <div class="entry-actions admin-only">
+                <button class="icon-btn" title="Edit name / team" onclick="openEditEntryModal('${escapeAttr(en.id)}')">&#9998;</button>
                 <button class="icon-btn" title="Delete" onclick="deleteEntry('${escapeAttr(en.id)}')">&#10005;</button>
             </div>
         </div>
