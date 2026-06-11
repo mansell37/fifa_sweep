@@ -268,8 +268,7 @@ function setupTabs() {
 }
 
 function activateTab(tab) {
-    if (tab === 'analytics' && !isAnalyticsVisibleToCurrentUser()) tab = 'sweep';
-    if (tab === 'matches' && !adminMode) tab = 'sweep';
+    if (tab === 'enter' && !adminMode) tab = 'sweep';
     if (tab === 'emailguide' && !adminMode) tab = 'sweep';
     activeTab = tab;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -282,22 +281,12 @@ function activateTab(tab) {
     if (tab === 'emailguide') renderEmailGuide();
 }
 
-function isAnalyticsVisibleToCurrentUser() {
-    return settings.analyticsVisible === true || adminMode;
-}
-
-// Hide the Analytics tab button from entrants when settings.analyticsVisible is false.
-// Reuses the existing .admin-only CSS rule (hidden unless body.admin-active).
+// Analytics is always public now (moved to main section). Keeping the
+// helpers as no-ops in case anything still calls them.
+function isAnalyticsVisibleToCurrentUser() { return true; }
 function applyAnalyticsVisibility() {
     const btn = document.getElementById('analyticsTabBtn');
-    if (!btn) return;
-    const publicVisible = settings.analyticsVisible === true;
-    btn.classList.toggle('admin-only', !publicVisible);
-    btn.title = publicVisible ? '' : 'Hidden from entrants until competition starts (admin-only)';
-    const cb = document.getElementById('analyticsVisibleToggle');
-    if (cb) cb.checked = publicVisible;
-    // Bounce a non-admin off the analytics tab if it just became hidden.
-    if (activeTab === 'analytics' && !isAnalyticsVisibleToCurrentUser()) activateTab('sweep');
+    if (btn) btn.classList.remove('admin-only');
 }
 
 // =============================================================
@@ -717,7 +706,7 @@ function setupAdmin() {
             renderEntriesList();
             applyAnalyticsVisibility();
             // Bounce off any admin-only tabs the user might be on.
-            if (activeTab === 'matches' || activeTab === 'emailguide') activateTab('sweep');
+            if (activeTab === 'enter' || activeTab === 'emailguide') activateTab('sweep');
         } else {
             document.getElementById('adminPwModal').classList.add('active');
             document.getElementById('adminPwInput').value = '';
