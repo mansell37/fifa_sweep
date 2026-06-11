@@ -4,3 +4,4 @@ server.log
 *.swp
 .env
 .env.local
+data/backups/
