@@ -73,6 +73,7 @@ let settings       = {};
 let activeTab      = 'sweep';
 let adminMode      = false;
 let showBonusPicks = false;
+let leaderboardSearch = '';
 
 function useServerStorage() {
     return window.location.protocol !== 'file:';
@@ -445,7 +446,25 @@ function renderLeaderboard() {
     const ranked = entries.map(en => ({ en, total: entryTotal(en), bonusPts: bonusPointsFor(en) }))
         .sort((a, b) => b.total - a.total || b.bonusPts - a.bonusPts);
 
-    body.innerHTML = ranked.map(({ en, total }, idx) => {
+    // Filter AFTER ranking so the # column shows each entrant's real position
+    // out of the full field, not just their position within the filtered view.
+    const q = leaderboardSearch.trim().toLowerCase();
+    const visible = q
+        ? ranked.map((r, idx) => ({ ...r, idx })).filter(({ en }) =>
+            (en.team || '').toLowerCase().includes(q) ||
+            (en.entrant || '').toLowerCase().includes(q))
+        : ranked.map((r, idx) => ({ ...r, idx }));
+
+    if (q) {
+        countEl.textContent = `${visible.length} of ${entries.length} matching "${q}"`;
+    }
+
+    if (visible.length === 0) {
+        body.innerHTML = `<tr><td colspan="${totalCols}" class="empty-cell">No entries match "${escapeHtml(q)}". Clear the search to see everyone.</td></tr>`;
+        return;
+    }
+
+    body.innerHTML = visible.map(({ en, total, idx }) => {
         const rankClass = idx === 0 ? 'r1' : idx === 1 ? 'r2' : idx === 2 ? 'r3' : '';
         const bonusCells = showBonusPicks
             ? BONUS_QUESTIONS.map(q => bonusAnswerCell(en, q)).join('')
@@ -1588,6 +1607,13 @@ async function init() {
         document.getElementById('toggleBonusPicks').textContent = showBonusPicks ? 'Hide bonus picks' : 'Show bonus picks';
         renderLeaderboard();
     });
+    const searchInput = document.getElementById('leaderboardSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            leaderboardSearch = e.target.value;
+            renderLeaderboard();
+        });
+    }
     document.getElementById('refreshBtn').addEventListener('click', async () => {
         await loadFromServer();
         populatePickSelects();

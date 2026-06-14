@@ -186,8 +186,25 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
 }
 .sweep-meta .sep { color: var(--gray-300); }
+.sweep-search {
+    padding: 6px 12px;
+    border: 1px solid var(--gray-300);
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--gray-800);
+    background: white;
+    min-width: 200px;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.sweep-search:focus {
+    border-color: var(--wc-gold);
+    box-shadow: 0 0 0 3px rgba(212,175,55,0.22);
+}
+.sweep-search::placeholder { color: var(--gray-400); }
 
 .sweep-table-wrapper {
     background: white;
