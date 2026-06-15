@@ -666,12 +666,28 @@ function renderAnalytics() {
         }
     }
 
-    // --- Top scoring teams in the tournament (by raw points) ---
+    // --- Top scoring teams (by scaled points — what entrants actually score) ---
     const teamScores = Object.entries(results)
-        .map(([team, _r]) => ({ team, raw: teamRawPoints(team), tier: tierOf(team) }))
+        .map(([team, _r]) => {
+            const tier = tierOf(team);
+            const raw = teamRawPoints(team);
+            const mult = tier ? TIER_MULTIPLIERS[tier] : 1;
+            return { team, raw, scaled: raw * mult, mult, tier };
+        })
         .filter(t => t.raw > 0)
-        .sort((a, b) => b.raw - a.raw)
+        .sort((a, b) => b.scaled - a.scaled)
         .slice(0, 8);
+
+    // --- Tournament goals + straight-line projection vs the 300 bonus question ---
+    const TOURNAMENT_MATCH_COUNT = 104;
+    const finishedMatches = (matches || []).filter(m =>
+        m.status === 'finished' &&
+        Number.isFinite(m.scoreHome) && Number.isFinite(m.scoreAway));
+    const matchesPlayed = finishedMatches.length;
+    const totalGoals = finishedMatches.reduce((s, m) => s + m.scoreHome + m.scoreAway, 0);
+    const avgGoalsPerGame = matchesPlayed > 0 ? totalGoals / matchesPlayed : 0;
+    const projectedTotal = matchesPlayed > 0 ? Math.round(avgGoalsPerGame * TOURNAMENT_MATCH_COUNT) : 0;
+    const pacePct = matchesPlayed > 0 ? Math.min(100, Math.round((projectedTotal / 300) * 100)) : 0;
 
     // --- Bonus consensus ---
     let goalsY = 0, goalsN = 0, europeanY = 0, europeanN = 0, ausY = 0, ausN = 0;
@@ -730,11 +746,42 @@ function renderAnalytics() {
             ${teamScores.length === 0
                 ? '<div class="empty-cell">No tournament results entered yet</div>'
                 : teamScores.map(t => `
-                    <div class="analytics-stat-row">
-                        <span><span class="tier-pill tier-pill-${t.tier || 1}">G${t.tier || '?'}</span> ${escapeHtml(t.team)}</span>
-                        <span class="stat-val">${t.raw} pts</span>
+                    <div class="analytics-team-row">
+                        <span class="analytics-team-name">
+                            <span class="tier-pill tier-pill-${t.tier || 1}">G${t.tier || '?'}</span>
+                            ${escapeHtml(t.team)}
+                        </span>
+                        <span class="score-boxes">
+                            <span class="score-box raw" title="Raw points scored at the tournament">
+                                <span class="score-box-label">Raw</span>
+                                <span class="score-box-val">${t.raw}</span>
+                            </span>
+                            <span class="score-box scaled" title="Scaled points — raw × group multiplier (what entrants score for this pick)">
+                                <span class="score-box-label">&times;${t.mult}</span>
+                                <span class="score-box-val">${formatPts(t.scaled)}</span>
+                            </span>
+                        </span>
                     </div>
                 `).join('')}
+        </div>
+
+        <div class="analytics-card">
+            <h3>Tournament goals <span class="mult-mini">vs 300+ bonus question</span></h3>
+            ${matchesPlayed === 0
+                ? '<div class="empty-cell">No finished matches yet</div>'
+                : `
+                <div class="analytics-stat-row"><span>Goals so far</span><span class="stat-val">${totalGoals} <span class="stat-sub">(${matchesPlayed} / ${TOURNAMENT_MATCH_COUNT} games)</span></span></div>
+                <div class="analytics-stat-row"><span>Average per game</span><span class="stat-val">${avgGoalsPerGame.toFixed(2)}</span></div>
+                <div class="analytics-stat-row"><span>Projected total (straight-line)</span><span class="stat-val ${projectedTotal >= 300 ? 'stat-val-over' : 'stat-val-under'}">${projectedTotal}</span></div>
+                <div class="goal-pace-bar" title="Projected progress towards 300">
+                    <div class="goal-pace-fill ${projectedTotal >= 300 ? 'is-over' : ''}" style="width:${pacePct}%"></div>
+                    <span class="goal-pace-marker" style="left:${(300 / Math.max(projectedTotal, 300, 1)) * 100}%" title="300 goals — bonus threshold"></span>
+                </div>
+                <p class="analytics-hint" style="text-align:center;margin-top:6px">
+                    ${projectedTotal >= 300
+                        ? `On pace for <strong>${projectedTotal} goals</strong> &mdash; <strong>${(projectedTotal - 300)}</strong> over the bonus threshold.`
+                        : `Tracking <strong>${300 - projectedTotal} short</strong> of the 300-goal bonus threshold.`}
+                </p>`}
         </div>
 
         <div class="analytics-card">

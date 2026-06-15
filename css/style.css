@@ -1025,6 +1025,101 @@ body.admin-active .admin-only { display: revert; }
 }
 
 /* ========================================
+   ANALYTICS — Top scoring team boxes + goal pace bar
+   ======================================== */
+.analytics-team-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+.analytics-team-row:last-child { border-bottom: 0; }
+.analytics-team-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+    color: var(--gray-800);
+    font-weight: 600;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.score-boxes {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.score-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--gray-200);
+    background: var(--gray-50);
+    min-width: 48px;
+    line-height: 1.1;
+}
+.score-box.scaled {
+    background: linear-gradient(135deg, var(--wc-gold), #e6c860);
+    border-color: var(--wc-gold-deep);
+    color: var(--wc-navy-deep);
+}
+.score-box-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--gray-500);
+}
+.score-box.scaled .score-box-label { color: var(--wc-navy-deep); opacity: 0.7; }
+.score-box-val {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--wc-navy-deep);
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-sub {
+    color: var(--gray-500);
+    font-weight: 500;
+    font-size: 11px;
+    margin-left: 4px;
+}
+.stat-val-over { color: var(--wc-pitch); }
+.stat-val-under { color: var(--wc-crimson-deep); }
+.goal-pace-bar {
+    position: relative;
+    height: 10px;
+    background: var(--gray-100);
+    border-radius: 999px;
+    margin-top: 10px;
+    overflow: hidden;
+}
+.goal-pace-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--wc-crimson), var(--wc-crimson-deep));
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+.goal-pace-fill.is-over {
+    background: linear-gradient(90deg, var(--wc-pitch), #1f5e3a);
+}
+.goal-pace-marker {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 2px;
+    background: var(--wc-navy-deep);
+    transform: translateX(-1px);
+}
+
+/* ========================================
    EMAIL GUIDE TAB (admin-only, screenshot-ready)
    ======================================== */
 .eg-page {
