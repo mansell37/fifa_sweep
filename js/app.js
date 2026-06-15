@@ -541,9 +541,7 @@ function formatMoney(n) {
     return '$' + (Number.isInteger(v) ? String(v) : v.toFixed(2));
 }
 
-function renderPrizePool() {
-    const box = document.getElementById('prizePoolBox');
-    if (!box) return;
+function prizePoolInnerHtml() {
     const count = entries.length;
     const total = count * ENTRY_FEE;
     const splits = PRIZE_SPLITS.map(s => `
@@ -553,7 +551,7 @@ function renderPrizePool() {
             <span class="pp-amt">${formatMoney(total * s.pct)}</span>
         </div>
     `).join('');
-    box.innerHTML = `
+    return `
         <div class="pp-top">
             <span class="pp-title">&#127942; Prize Pool</span>
             <span class="pp-total">${formatMoney(total)}</span>
@@ -561,6 +559,12 @@ function renderPrizePool() {
         <div class="pp-sub">${count} ${count === 1 ? 'entry' : 'entries'} &times; ${formatMoney(ENTRY_FEE)} each</div>
         <div class="pp-splits">${splits}</div>
     `;
+}
+
+function renderPrizePool() {
+    const box = document.getElementById('prizePoolBox');
+    if (!box) return;
+    box.innerHTML = prizePoolInnerHtml();
 }
 
 function renderEntriesList() {
@@ -739,6 +743,10 @@ function renderAnalytics() {
             <div class="analytics-stat-row"><span>Top score</span><span class="stat-val">${formatPts(max)}</span></div>
             <div class="analytics-stat-row"><span>Lowest score</span><span class="stat-val">${formatPts(min)}</span></div>
             <div class="analytics-stat-row"><span>Spread</span><span class="stat-val">${formatPts(max - min)} pts</span></div>
+        </div>
+
+        <div class="prize-pool-box prize-pool-box-analytics">
+            ${prizePoolInnerHtml()}
         </div>
 
         <div class="analytics-card">

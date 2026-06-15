@@ -397,6 +397,10 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
     border: 1px solid var(--wc-gold);
     box-shadow: var(--shadow-sm);
 }
+.prize-pool-box.prize-pool-box-analytics {
+    margin-bottom: 0;          /* grid gap already spaces it */
+    align-self: start;         /* don't stretch to row height */
+}
 .prize-pool-box .pp-top {
     display: flex;
     align-items: baseline;
