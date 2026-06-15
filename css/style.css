@@ -1312,6 +1312,7 @@ body.admin-active .admin-only { display: revert; }
     border: 1px solid var(--gray-200);
     overflow: hidden;
     box-shadow: var(--shadow-sm);
+    scroll-margin-top: 72px;   /* clearance for the sticky header on auto-scroll */
 }
 .match-day-head {
     display: flex;

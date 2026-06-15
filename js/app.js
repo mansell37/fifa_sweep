@@ -275,7 +275,7 @@ function activateTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === `tab-${tab}`));
     if (tab === 'sweep') renderLeaderboard();
-    if (tab === 'matches') renderMatches();
+    if (tab === 'matches') renderMatches(true);
     if (tab === 'tiers') renderTiers();
     if (tab === 'rules') renderRulesBonus();
     if (tab === 'analytics') renderAnalytics();
@@ -1063,7 +1063,7 @@ function matchPasses(m, filter, todayKey) {
     return true;
 }
 
-function renderMatches() {
+function renderMatches(scrollToToday = false) {
     const root = document.getElementById('matchesContent');
     if (!root) return;
 
@@ -1105,6 +1105,24 @@ function renderMatches() {
 
     root.innerHTML = adminMatchesToolbar() + dayBlocks;
     attachMatchAdminHandlers();
+
+    // On initial open of the tab, jump to today's matches so the user isn't
+    // staring at Mexico vs South Africa from match-day one. Falls back to the
+    // first upcoming day when nothing's scheduled for today (Sydney time).
+    if (scrollToToday) {
+        setTimeout(() => {
+            let target = root.querySelector('.match-today-pill');
+            if (target) target = target.closest('.match-day');
+            if (!target) {
+                const upcomingCard = Array.from(root.querySelectorAll('.match-card'))
+                    .find((c) => !c.classList.contains('is-final'));
+                if (upcomingCard) target = upcomingCard.closest('.match-day');
+            }
+            if (target && typeof target.scrollIntoView === 'function') {
+                target.scrollIntoView({ behavior: 'auto', block: 'start' });
+            }
+        }, 0);
+    }
 }
 
 function matchCardHtml(m) {
