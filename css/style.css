@@ -891,6 +891,8 @@ body.admin-active .admin-only { display: revert; }
 .pick-bar-fill.tier-fill-4 { background: var(--t4); }
 .pick-bar-fill.tier-fill-5 { background: var(--t5); }
 .pick-bar-val { font-weight: 700; color: var(--gray-800); min-width: 20px; text-align: right; }
+.pick-bar-row.is-zero { opacity: 0.55; }
+.pick-bar-row.is-zero .pick-bar-val { color: var(--gray-500); font-weight: 500; }
 
 /* ========================================
    MODALS

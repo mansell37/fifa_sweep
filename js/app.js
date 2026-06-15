@@ -718,16 +718,19 @@ function renderAnalytics() {
     const aliveLabel = (n) => `${n} / ${PICK_COUNT}`;
 
     const tierBlocks = TIER_KEYS.map(t => {
-        const sorted = Object.entries(tierCounts[t]).sort((a, b) => b[1] - a[1]);
-        const top = sorted.slice(0, 8);
-        const maxN = top.length ? top[0][1] : 1;
+        // Include every team in the group, not just those with picks. Default
+        // to 0 so 0-pick teams still show with an empty bar — gives the full
+        // distribution picture instead of just the top of the leaderboard.
+        const allTeams = (tiers[t] || []).map(team => [team, tierCounts[t][team] || 0]);
+        const sorted = allTeams.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+        const maxN = sorted.length && sorted[0][1] > 0 ? sorted[0][1] : 1;
         return `<div class="analytics-card">
-            <h3>Group ${t} most-picked <span class="mult-mini">×${TIER_MULTIPLIERS[t]}</span></h3>
-            ${top.length === 0 ? '<div class="empty-cell">No picks</div>' :
-                top.map(([team, n]) => `
-                    <div class="pick-bar-row">
+            <h3>Group ${t} picks <span class="mult-mini">×${TIER_MULTIPLIERS[t]}</span></h3>
+            ${sorted.length === 0 ? '<div class="empty-cell">No teams in this group</div>' :
+                sorted.map(([team, n]) => `
+                    <div class="pick-bar-row${n === 0 ? ' is-zero' : ''}">
                         <span class="pick-bar-team">${escapeHtml(team)}</span>
-                        <div class="pick-bar"><div class="pick-bar-fill tier-fill-${t}" style="width:${(n / maxN) * 100}%"></div></div>
+                        <div class="pick-bar"><div class="pick-bar-fill tier-fill-${t}" style="width:${n > 0 ? (n / maxN) * 100 : 0}%"></div></div>
                         <span class="pick-bar-val">${n}</span>
                     </div>
                 `).join('')}
