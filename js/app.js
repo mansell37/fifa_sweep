@@ -446,14 +446,29 @@ function renderLeaderboard() {
     const ranked = entries.map(en => ({ en, total: entryTotal(en), bonusPts: bonusPointsFor(en) }))
         .sort((a, b) => b.total - a.total || b.bonusPts - a.bonusPts);
 
+    // Competition ranking — entries with identical (total, bonusPts) share
+    // a rank, and the next group skips ahead. Tied entries get an "=" suffix.
+    let currentRank = 0;
+    let prevKey = null;
+    const rankedWithPlace = ranked.map((r, i) => {
+        const key = `${r.total}|${r.bonusPts}`;
+        if (key !== prevKey) {
+            currentRank = i + 1;
+            prevKey = key;
+        }
+        return { ...r, rank: currentRank };
+    });
+    const rankCounts = {};
+    for (const r of rankedWithPlace) rankCounts[r.rank] = (rankCounts[r.rank] || 0) + 1;
+
     // Filter AFTER ranking so the # column shows each entrant's real position
     // out of the full field, not just their position within the filtered view.
     const q = leaderboardSearch.trim().toLowerCase();
     const visible = q
-        ? ranked.map((r, idx) => ({ ...r, idx })).filter(({ en }) =>
+        ? rankedWithPlace.map((r, idx) => ({ ...r, idx })).filter(({ en }) =>
             (en.team || '').toLowerCase().includes(q) ||
             (en.entrant || '').toLowerCase().includes(q))
-        : ranked.map((r, idx) => ({ ...r, idx }));
+        : rankedWithPlace.map((r, idx) => ({ ...r, idx }));
 
     if (q) {
         countEl.textContent = `${visible.length} of ${entries.length} matching "${q}"`;
@@ -464,14 +479,15 @@ function renderLeaderboard() {
         return;
     }
 
-    body.innerHTML = visible.map(({ en, total, idx }) => {
-        const rankClass = idx === 0 ? 'r1' : idx === 1 ? 'r2' : idx === 2 ? 'r3' : '';
+    body.innerHTML = visible.map(({ en, total, rank }) => {
+        const rankClass = rank === 1 ? 'r1' : rank === 2 ? 'r2' : rank === 3 ? 'r3' : '';
+        const tied = rankCounts[rank] > 1;
         const bonusCells = showBonusPicks
             ? BONUS_QUESTIONS.map(q => bonusAnswerCell(en, q)).join('')
             : '';
         return `
             <tr>
-                <td class="rank ${rankClass}">${idx + 1}</td>
+                <td class="rank ${rankClass}" title="${tied ? rankCounts[rank] + ' entries tied on this score (broken only by total + bonus points)' : ''}">${rank}${tied ? '<span class="rank-tied">=</span>' : ''}</td>
                 <td>
                     <div class="team-line"><span class="team-name">${escapeHtml(en.team)}</span><span class="team-sep">·</span><span class="entrant-name">${escapeHtml(en.entrant)}</span></div>
                 </td>

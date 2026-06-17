@@ -248,6 +248,11 @@ h3 { font-size: 16px; font-weight: 700; color: var(--gray-800); }
 .sweep-table .rank.r1 { color: var(--wc-gold-deep); font-size: 15px; }
 .sweep-table .rank.r2 { color: var(--gray-500); }
 .sweep-table .rank.r3 { color: var(--amber-600); }
+.sweep-table .rank .rank-tied {
+    font-weight: 700;
+    margin-left: 1px;
+    opacity: 0.6;
+}
 .sweep-table .total {
     font-weight: 700;
     color: var(--wc-crimson-deep);
