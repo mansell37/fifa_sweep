@@ -709,6 +709,33 @@ function renderAnalytics() {
     const projectedTotal = matchesPlayed > 0 ? Math.round(avgGoalsPerGame * TOURNAMENT_MATCH_COUNT) : 0;
     const pacePct = matchesPlayed > 0 ? Math.min(100, Math.round((projectedTotal / 300) * 100)) : 0;
 
+    // --- Theoretical best team: pick the highest-scoring team in each group ---
+    const bestPerGroup = TIER_KEYS.map(t => {
+        const teamsInGroup = (tiers[t] || []).map(team => {
+            const raw = teamRawPoints(team);
+            const mult = TIER_MULTIPLIERS[t];
+            return { team, raw, scaled: raw * mult, mult, tier: t };
+        });
+        if (teamsInGroup.length === 0) return null;
+        teamsInGroup.sort((a, b) => b.scaled - a.scaled || b.raw - a.raw || a.team.localeCompare(b.team));
+        return teamsInGroup[0];
+    });
+    const dreamPicksTotal = bestPerGroup.reduce((s, p) => s + (p ? p.scaled : 0), 0);
+    // Best possible bonus: count answered questions × max bonus pts each.
+    const knownBonusCorrect = BONUS_QUESTIONS.reduce((n, q) => n + (bonus[q.key] ? 1 : 0), 0);
+    const dreamBonusPts = knownBonusCorrect * BONUS_POINTS_PER_CORRECT;
+    const dreamGrandTotal = dreamPicksTotal + dreamBonusPts;
+    // How many current entrants are matching the dream-team picks set exactly?
+    const dreamPickSet = new Set(bestPerGroup.filter(Boolean).map((p) => p.team));
+    const entrantsOnDreamLineup = entries.filter((en) => {
+        if (!en.picks || en.picks.length < PICK_COUNT) return false;
+        for (let i = 0; i < PICK_COUNT; i++) {
+            const best = bestPerGroup[i];
+            if (!best || en.picks[i] !== best.team) return false;
+        }
+        return true;
+    }).length;
+
     // --- Bonus consensus ---
     let goalsY = 0, goalsN = 0, europeanY = 0, europeanN = 0, ausY = 0, ausN = 0;
     for (const en of entries) {
@@ -790,6 +817,40 @@ function renderAnalytics() {
                         </span>
                     </div>
                 `).join('')}
+        </div>
+
+        <div class="analytics-card dream-team-card">
+            <h3>&#127942; Theoretical best team <span class="mult-mini">if you'd picked the leader in every group</span></h3>
+            ${dreamPicksTotal === 0
+                ? '<div class="empty-cell">No team has scored any points yet — check back once group games kick off.</div>'
+                : `
+                ${bestPerGroup.map((p, i) => {
+                    const t = i + 1;
+                    if (!p) return '';
+                    return `<div class="dream-pick-row">
+                        <span class="dream-pick-grp"><span class="tier-pill tier-pill-${t}">G${t}</span></span>
+                        <span class="dream-pick-team">${escapeHtml(p.team)}</span>
+                        <span class="dream-pick-calc">${p.raw} &times; ${p.mult}</span>
+                        <span class="dream-pick-pts">${formatPts(p.scaled)}</span>
+                    </div>`;
+                }).join('')}
+                <div class="dream-total-row">
+                    <span>Picks total</span>
+                    <span class="dream-total-val">${formatPts(dreamPicksTotal)}</span>
+                </div>
+                <div class="dream-total-row dream-total-sub">
+                    <span>+ Bonus pts (correct so far)</span>
+                    <span class="dream-total-val">${dreamBonusPts}</span>
+                </div>
+                <div class="dream-total-row dream-total-grand">
+                    <span>Grand total</span>
+                    <span class="dream-total-val">${formatPts(dreamGrandTotal)}</span>
+                </div>
+                <p class="analytics-hint" style="margin-top:8px;text-align:center">
+                    ${entrantsOnDreamLineup === 0
+                        ? 'No entrants have all five of these picks.'
+                        : `<strong>${entrantsOnDreamLineup}</strong> ${entrantsOnDreamLineup === 1 ? 'entrant has' : 'entrants have'} this exact pick set.`}
+                </p>`}
         </div>
 
         <div class="analytics-card">

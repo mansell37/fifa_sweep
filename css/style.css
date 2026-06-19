@@ -899,6 +899,69 @@ body.admin-active .admin-only { display: revert; }
 .pick-bar-row.is-zero { opacity: 0.55; }
 .pick-bar-row.is-zero .pick-bar-val { color: var(--gray-500); font-weight: 500; }
 
+/* Theoretical best team card */
+.dream-team-card {
+    border: 1px solid var(--wc-gold);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.12), var(--shadow-sm);
+}
+.dream-team-card h3 { color: var(--wc-navy-deep); }
+.dream-pick-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--gray-200);
+    font-size: 13px;
+}
+.dream-pick-row:last-of-type { border-bottom: 0; }
+.dream-pick-team {
+    font-weight: 700;
+    color: var(--wc-navy-deep);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dream-pick-calc {
+    color: var(--gray-500);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.dream-pick-pts {
+    color: var(--wc-pitch);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    min-width: 36px;
+    text-align: right;
+}
+.dream-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    margin-top: 4px;
+    border-top: 1px solid var(--gray-200);
+    font-size: 13px;
+    color: var(--gray-700);
+}
+.dream-total-sub { color: var(--gray-500); margin-top: 0; border-top: 0; padding-top: 0; }
+.dream-total-row .dream-total-val {
+    font-weight: 700;
+    color: var(--wc-navy-deep);
+    font-variant-numeric: tabular-nums;
+}
+.dream-total-grand {
+    background: linear-gradient(135deg, var(--wc-gold), #e6c860);
+    color: var(--wc-navy-deep);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-top: 6px;
+    border-top: 0;
+    font-weight: 700;
+}
+.dream-total-grand .dream-total-val { font-size: 18px; }
+
 /* ========================================
    MODALS
    ======================================== */
