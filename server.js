@@ -107,6 +107,7 @@ function shapeMatch(m) {
     home, away,
     scoreHome: Number.isFinite(sh) ? sh : null,
     scoreAway: Number.isFinite(sa) ? sa : null,
+    winnerSide: m.winnerSide === "home" || m.winnerSide === "away" ? m.winnerSide : null,
     status,
     manuallyOverridden: !!m.manuallyOverridden,
   };
@@ -483,6 +484,10 @@ function mapEspnEvent(ev) {
       away: normalizeTeamName((away && away.team && (away.team.displayName || away.team.shortDisplayName || away.team.name)) || ""),
       scoreHome: Number.isFinite(homeScore) ? homeScore : null,
       scoreAway: Number.isFinite(awayScore) ? awayScore : null,
+      // ESPN flags the winning team on each competitor. Critical for knockouts
+      // decided on penalties — regulation score reads e.g. "1-1" but one side
+      // is still flagged as the winner.
+      winnerSide: home && home.winner === true ? "home" : (away && away.winner === true ? "away" : null),
       status,
     };
   } catch (e) { return null; }
@@ -566,11 +571,15 @@ function deriveResultsFromMatches(matches, existingResults) {
       else if (m.scoreHome < m.scoreAway) { derived[home].groupL++; derived[away].groupW++; }
       else { derived[home].groupD++; derived[away].groupD++; }
     } else if (["r32", "r16", "qf", "sf", "final", "3rd"].includes(m.stage)) {
-      // Knockouts can draw at 90' and go to extra time / penalties — ESPN may report
-      // the final score so equal scores shouldn't happen at the post stage; if it
-      // does (shootouts aren't surfaced in the score), skip rather than guess.
-      if (m.scoreHome === m.scoreAway) continue;
-      const winner = m.scoreHome > m.scoreAway ? home : away;
+      // For knockouts decided in regulation, the score reveals the winner.
+      // For penalty-shootout wins, ESPN reports a tied score but flags the
+      // winning competitor — we captured that as `winnerSide` in the poller.
+      let winner = null;
+      if (m.scoreHome > m.scoreAway) winner = home;
+      else if (m.scoreAway > m.scoreHome) winner = away;
+      else if (m.winnerSide === "home") winner = home;
+      else if (m.winnerSide === "away") winner = away;
+      if (!winner) continue;          // genuinely undetermined — skip
       const flagKey = m.stage === "3rd" ? "thirdPlace" : m.stage;
       derived[winner][flagKey] = true;
     }
@@ -733,7 +742,7 @@ app.post("/api/admin/matches/refresh", requireAdminToken, async (_req, res) => {
 
 app.post("/api/admin/matches/:id/score", requireAdminToken, async (req, res) => {
   const { id } = req.params;
-  const { scoreHome, scoreAway, clearOverride } = req.body || {};
+  const { scoreHome, scoreAway, clearOverride, winnerSide } = req.body || {};
   try {
     const updated = await enqueueWrite(async () => {
       const current = await readState();
@@ -745,7 +754,10 @@ app.post("/api/admin/matches/:id/score", requireAdminToken, async (req, res) => 
         const sh = Number(scoreHome);
         const sa = Number(scoreAway);
         if (!Number.isFinite(sh) || !Number.isFinite(sa)) throw new Error("scores must be numbers");
-        return { ...m, scoreHome: sh, scoreAway: sa, status: "finished", manuallyOverridden: true };
+        const ws = (sh === sa && (winnerSide === "home" || winnerSide === "away"))
+          ? winnerSide
+          : (sh === sa ? null : null);
+        return { ...m, scoreHome: sh, scoreAway: sa, winnerSide: ws, status: "finished", manuallyOverridden: true };
       });
       const results = deriveResultsFromMatches(matches, current.results);
       return writeState({ ...current, matches, results });

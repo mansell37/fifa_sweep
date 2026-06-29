@@ -1152,6 +1152,11 @@ function setupMatchesFilters() {
             renderMatches();
         });
     });
+    // Score-editor: live-toggle the penalty winner picker as the admin edits scores.
+    const hi = document.getElementById('matchScoreHomeInput');
+    const ai = document.getElementById('matchScoreAwayInput');
+    if (hi) hi.addEventListener('input', updateMatchWinnerVisibility);
+    if (ai) ai.addEventListener('input', updateMatchWinnerVisibility);
 }
 
 function formatLocalTime(utcStr, timeZone, locale) {
@@ -1265,12 +1270,16 @@ function matchCardHtml(m) {
     const lonTime = m.kickoffUTC ? formatLocalTime(m.kickoffUTC, 'Europe/London', 'en-GB') : '--:--';
     const finished = m.status === 'finished';
     const live = m.status === 'live';
-    const homeWin = finished && m.scoreHome > m.scoreAway;
-    const awayWin = finished && m.scoreAway > m.scoreHome;
-    const draw = finished && m.scoreHome === m.scoreAway;
+    const tiedScore = finished && m.scoreHome === m.scoreAway;
+    // For penalty-shootout knockouts the regulation score is tied but ESPN
+    // tells us which side won via winnerSide. Treat that team as the winner.
+    const wonOnPens = tiedScore && (m.winnerSide === 'home' || m.winnerSide === 'away');
+    const homeWin = finished && (m.scoreHome > m.scoreAway || m.winnerSide === 'home');
+    const awayWin = finished && (m.scoreAway > m.scoreHome || m.winnerSide === 'away');
+    const draw = tiedScore && !m.winnerSide;
     const totalGoals = finished ? (m.scoreHome + m.scoreAway) : null;
     const statusPill = finished
-        ? `<span class="match-status match-status-final">Final</span>`
+        ? `<span class="match-status match-status-final">Final${wonOnPens ? ' (pens)' : ''}</span>`
         : live
             ? `<span class="match-status match-status-live">Live</span>`
             : `<span class="match-status match-status-sched">Scheduled</span>`;
@@ -1362,9 +1371,31 @@ function openMatchScoreEditor(matchId) {
     document.getElementById('matchScoreHomeInput').value = m.scoreHome ?? '';
     document.getElementById('matchScoreAwayInput').value = m.scoreAway ?? '';
     document.getElementById('matchScoreModal').dataset.matchId = matchId;
+    document.getElementById('matchScoreModal').dataset.matchStage = m.stage || 'group';
+    // Penalty-shootout picker (only relevant for tied knockout scores)
+    document.getElementById('matchWinnerHomeName').textContent = m.home;
+    document.getElementById('matchWinnerAwayName').textContent = m.away;
+    const homeRadio = document.getElementById('matchWinnerHome');
+    const awayRadio = document.getElementById('matchWinnerAway');
+    const noneRadio = document.getElementById('matchWinnerNone');
+    homeRadio.checked = m.winnerSide === 'home';
+    awayRadio.checked = m.winnerSide === 'away';
+    noneRadio.checked = !m.winnerSide;
+    updateMatchWinnerVisibility();
     const clearBtn = document.getElementById('matchScoreClearBtn');
     clearBtn.style.display = m.manuallyOverridden ? 'inline-block' : 'none';
     modal.classList.add('active');
+}
+
+function updateMatchWinnerVisibility() {
+    const modal = document.getElementById('matchScoreModal');
+    const stage = modal.dataset.matchStage || 'group';
+    const isKO = ['r32', 'r16', 'qf', 'sf', 'final', '3rd'].includes(stage);
+    const sh = parseInt(document.getElementById('matchScoreHomeInput').value, 10);
+    const sa = parseInt(document.getElementById('matchScoreAwayInput').value, 10);
+    const tied = Number.isFinite(sh) && Number.isFinite(sa) && sh === sa;
+    const picker = document.getElementById('matchWinnerPicker');
+    if (picker) picker.style.display = (isKO && tied) ? 'block' : 'none';
 }
 
 window.closeMatchScoreModal = function () {
@@ -1380,11 +1411,23 @@ window.saveMatchScore = async function () {
         alert('Enter both scores as non-negative numbers.');
         return;
     }
+    // Pick up the penalty-shootout winner override (only used when scores are tied).
+    let winnerSide = null;
+    const homeRadio = document.getElementById('matchWinnerHome');
+    const awayRadio = document.getElementById('matchWinnerAway');
+    if (homeRadio && homeRadio.checked) winnerSide = 'home';
+    else if (awayRadio && awayRadio.checked) winnerSide = 'away';
+    const stage = modal.dataset.matchStage || 'group';
+    const isKO = ['r32', 'r16', 'qf', 'sf', 'final', '3rd'].includes(stage);
+    if (isKO && scoreHome === scoreAway && !winnerSide) {
+        alert('Tied knockout score — pick which side won on penalties.');
+        return;
+    }
     try {
         const res = await fetch(`/api/admin/matches/${encodeURIComponent(id)}/score`, {
             method: 'POST',
             headers: adminHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ scoreHome, scoreAway }),
+            body: JSON.stringify({ scoreHome, scoreAway, winnerSide }),
         });
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
