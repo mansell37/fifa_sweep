@@ -709,32 +709,43 @@ function renderAnalytics() {
     const projectedTotal = matchesPlayed > 0 ? Math.round(avgGoalsPerGame * TOURNAMENT_MATCH_COUNT) : 0;
     const pacePct = matchesPlayed > 0 ? Math.min(100, Math.round((projectedTotal / 300) * 100)) : 0;
 
-    // --- Theoretical best team: pick the highest-scoring team in each group ---
+    // --- Theoretical best team: for each group, ALL teams tied for the top
+    //     scaled score. Counting only one would miss entrants who happen to
+    //     hold a different equivalent pick (e.g. two G3 teams both on 12 pts).
     const bestPerGroup = TIER_KEYS.map(t => {
         const teamsInGroup = (tiers[t] || []).map(team => {
             const raw = teamRawPoints(team);
             const mult = TIER_MULTIPLIERS[t];
             return { team, raw, scaled: raw * mult, mult, tier: t };
         });
-        if (teamsInGroup.length === 0) return null;
+        if (teamsInGroup.length === 0) return { tier: t, mult: TIER_MULTIPLIERS[t], scaled: 0, teams: [] };
         teamsInGroup.sort((a, b) => b.scaled - a.scaled || b.raw - a.raw || a.team.localeCompare(b.team));
-        return teamsInGroup[0];
+        const topScaled = teamsInGroup[0].scaled;
+        const topRaw = teamsInGroup[0].raw;
+        const ties = teamsInGroup.filter((x) => x.scaled === topScaled && x.raw === topRaw);
+        return {
+            tier: t,
+            mult: TIER_MULTIPLIERS[t],
+            scaled: topScaled,
+            raw: topRaw,
+            teams: ties.map((x) => x.team),       // all teams sharing the top scaled score
+        };
     });
-    const dreamPicksTotal = bestPerGroup.reduce((s, p) => s + (p ? p.scaled : 0), 0);
+    const dreamPicksTotal = bestPerGroup.reduce((s, g) => s + (g ? g.scaled : 0), 0);
     // Best possible bonus: count answered questions × max bonus pts each.
     const knownBonusCorrect = BONUS_QUESTIONS.reduce((n, q) => n + (bonus[q.key] ? 1 : 0), 0);
     const dreamBonusPts = knownBonusCorrect * BONUS_POINTS_PER_CORRECT;
     const dreamGrandTotal = dreamPicksTotal + dreamBonusPts;
-    // How many current entrants are matching the dream-team picks set exactly?
-    const dreamPickSet = new Set(bestPerGroup.filter(Boolean).map((p) => p.team));
-    const entrantsOnDreamLineup = entries.filter((en) => {
+    // An entrant is "on the dream lineup" if EVERY pick is among that group's
+    // top-tied set — so multiple equivalent combos all qualify.
+    const bestSetsByGroup = bestPerGroup.map((g) => new Set(g ? g.teams : []));
+    const dreamMatchEntrants = entries.filter((en) => {
         if (!en.picks || en.picks.length < PICK_COUNT) return false;
         for (let i = 0; i < PICK_COUNT; i++) {
-            const best = bestPerGroup[i];
-            if (!best || en.picks[i] !== best.team) return false;
+            if (!bestSetsByGroup[i] || !bestSetsByGroup[i].has(en.picks[i])) return false;
         }
         return true;
-    }).length;
+    });
 
     // --- Bonus consensus ---
     let goalsY = 0, goalsN = 0, europeanY = 0, europeanN = 0, ausY = 0, ausN = 0;
@@ -820,18 +831,21 @@ function renderAnalytics() {
         </div>
 
         <div class="analytics-card dream-team-card">
-            <h3>&#127942; Theoretical best team <span class="mult-mini">if you'd picked the leader in every group</span></h3>
+            <h3>&#127942; Theoretical best team <span class="mult-mini">top-scoring pick in every group</span></h3>
             ${dreamPicksTotal === 0
                 ? '<div class="empty-cell">No team has scored any points yet — check back once group games kick off.</div>'
                 : `
-                ${bestPerGroup.map((p, i) => {
+                ${bestPerGroup.map((g, i) => {
+                    if (!g || g.teams.length === 0) return '';
                     const t = i + 1;
-                    if (!p) return '';
+                    const teamsHtml = g.teams
+                        .map((nm) => `<span class="dream-tied-team">${escapeHtml(nm)}</span>`)
+                        .join(g.teams.length > 1 ? '<span class="dream-tied-sep">/</span>' : '');
                     return `<div class="dream-pick-row">
                         <span class="dream-pick-grp"><span class="tier-pill tier-pill-${t}">G${t}</span></span>
-                        <span class="dream-pick-team">${escapeHtml(p.team)}</span>
-                        <span class="dream-pick-calc">${p.raw} &times; ${p.mult}</span>
-                        <span class="dream-pick-pts">${formatPts(p.scaled)}</span>
+                        <span class="dream-pick-team">${teamsHtml}${g.teams.length > 1 ? `<span class="dream-tied-count">${g.teams.length} tied</span>` : ''}</span>
+                        <span class="dream-pick-calc">${g.raw} &times; ${g.mult}</span>
+                        <span class="dream-pick-pts">${formatPts(g.scaled)}</span>
                     </div>`;
                 }).join('')}
                 <div class="dream-total-row">
@@ -846,11 +860,17 @@ function renderAnalytics() {
                     <span>Grand total</span>
                     <span class="dream-total-val">${formatPts(dreamGrandTotal)}</span>
                 </div>
-                <p class="analytics-hint" style="margin-top:8px;text-align:center">
-                    ${entrantsOnDreamLineup === 0
-                        ? 'No entrants have all five of these picks.'
-                        : `<strong>${entrantsOnDreamLineup}</strong> ${entrantsOnDreamLineup === 1 ? 'entrant has' : 'entrants have'} this exact pick set.`}
-                </p>`}
+                ${dreamMatchEntrants.length === 0
+                    ? `<p class="analytics-hint" style="margin-top:8px;text-align:center">No entrants are running an equivalent best-scoring lineup.</p>`
+                    : `<div class="dream-match-list">
+                        <div class="dream-match-list-head">&#127919; ${dreamMatchEntrants.length === 1 ? 'Entrant on the dream lineup' : `${dreamMatchEntrants.length} entrants on the dream lineup`}</div>
+                        ${dreamMatchEntrants.map((en) => `
+                            <div class="dream-match-row">
+                                <span class="dream-match-team">${escapeHtml(en.team)}</span>
+                                <span class="dream-match-entrant">${escapeHtml(en.entrant)}</span>
+                            </div>
+                        `).join('')}
+                       </div>`}`}
         </div>
 
         <div class="analytics-card">
