@@ -759,12 +759,32 @@ function renderAnalytics() {
         else if (a.australiaThroughGroup === 'N') ausN++;
     }
 
-    // --- Picks-still-alive per entry (team has won at least one KO round) ---
+    // --- Picks-still-alive: a team is "alive" if it's been in a KO match
+    //     AND hasn't lost one yet. Uses the matches array so a team that
+    //     won R32 but lost R16 is correctly excluded.
+    const KO_STAGES = new Set(['r32', 'r16', 'qf', 'sf', 'final', '3rd']);
+    const teamsInKO = new Set();      // took part in any KO fixture
+    const teamsOutKO = new Set();     // lost a KO match
+    for (const m of (matches || [])) {
+        if (!KO_STAGES.has(m.stage)) continue;
+        if (m.home) teamsInKO.add(m.home);
+        if (m.away) teamsInKO.add(m.away);
+        if (m.status !== 'finished') continue;
+        // Determine loser, accounting for penalty-shootout winnerSide.
+        let loser = null;
+        if (Number.isFinite(m.scoreHome) && Number.isFinite(m.scoreAway)) {
+            if (m.scoreHome > m.scoreAway) loser = m.away;
+            else if (m.scoreAway > m.scoreHome) loser = m.home;
+            else if (m.winnerSide === 'home') loser = m.away;
+            else if (m.winnerSide === 'away') loser = m.home;
+        }
+        if (loser) teamsOutKO.add(loser);
+    }
+    const isTeamAlive = (team) => !!team && teamsInKO.has(team) && !teamsOutKO.has(team);
     const aliveCounts = entries.map(en => {
         let alive = 0;
         for (const team of en.picks) {
-            const r = teamRecord(team);
-            if (KO_ROUNDS.some(rd => r[rd.key])) alive++;
+            if (isTeamAlive(team)) alive++;
         }
         return { team: en.team, entrant: en.entrant, alive };
     }).sort((a, b) => b.alive - a.alive || a.team.localeCompare(b.team));
@@ -901,7 +921,7 @@ function renderAnalytics() {
 
         <div class="analytics-card analytics-card-tall">
             <h3>Picks still alive (in knockout)</h3>
-            <p class="analytics-hint">Number of an entrant's ${PICK_COUNT} picks that have won at least one knockout round.</p>
+            <p class="analytics-hint">Number of an entrant's ${PICK_COUNT} picks that are still in the tournament — reached the knockouts and haven't lost a KO match.</p>
             ${aliveCounts.slice(0, 14).map(e => `
                 <div class="analytics-stat-row">
                     <span>${escapeHtml(e.team)} <span class="entrant-small">· ${escapeHtml(e.entrant)}</span></span>
