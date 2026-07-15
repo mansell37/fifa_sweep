@@ -230,6 +230,27 @@ function teamRawPoints(teamName) {
     return pts;
 }
 
+// Count knockout-match losses for a team from the matches array. Not part of
+// scoring (KO losses aren't worth negative points) — just used for the display
+// L chip so the total W/D/L reflects the tournament, not just the group stage.
+const _KO_LOSS_STAGES = new Set(['r32', 'r16', 'qf', 'sf', 'final', '3rd']);
+function teamKoLosses(teamName) {
+    if (!teamName) return 0;
+    let n = 0;
+    for (const m of (matches || [])) {
+        if (!_KO_LOSS_STAGES.has(m.stage) || m.status !== 'finished') continue;
+        let loser = null;
+        if (Number.isFinite(m.scoreHome) && Number.isFinite(m.scoreAway)) {
+            if (m.scoreHome > m.scoreAway) loser = m.away;
+            else if (m.scoreAway > m.scoreHome) loser = m.home;
+            else if (m.winnerSide === 'home') loser = m.away;
+            else if (m.winnerSide === 'away') loser = m.home;
+        }
+        if (loser === teamName) n++;
+    }
+    return n;
+}
+
 function tierOf(teamName) {
     for (const t of TIER_KEYS) if (tiers[t] && tiers[t].includes(teamName)) return t;
     return null;
@@ -508,6 +529,7 @@ function pickCell(teamName, tier) {
     const scaled = raw * mult;
     const koWins = KO_ROUNDS.filter(rd => r[rd.key]).length;
     const totalWins = (r.groupW || 0) + koWins;
+    const totalLosses = (r.groupL || 0) + teamKoLosses(teamName);
     const thirdChip = r.thirdPlace
         ? `<span class="ko-chip" title="3rd-place playoff winner (+3)">3rd</span>`
         : '';
@@ -517,10 +539,10 @@ function pickCell(teamName, tier) {
                 <span class="pick-team">${escapeHtml(teamName)}</span>
                 ${thirdChip}
             </div>
-            <div class="wdl-inline" title="W = all wins (3 pts each), D = group draws (1 pt), L = group losses">
+            <div class="wdl-inline" title="W = all wins (3 pts each), D = group draws (1 pt), L = all losses (group + knockout)">
                 <span class="wdl-chip wdl-w">W${totalWins}</span>
                 <span class="wdl-chip wdl-d">D${r.groupD || 0}</span>
-                <span class="wdl-chip wdl-l">L${r.groupL || 0}</span>
+                <span class="wdl-chip wdl-l">L${totalLosses}</span>
             </div>
             <div class="pick-scaled" title="${raw} &times; ${mult}">${formatPts(scaled)}</div>
         </div>
