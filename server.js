@@ -19,6 +19,10 @@ const DIGEST_HOUR_UTC = (() => {
   const h = parseInt(process.env.DIGEST_HOUR_UTC ?? "21", 10);
   return Number.isFinite(h) && h >= 0 && h <= 23 ? h : 21;
 })();
+// Toggle for the daily-roster digest. Defaults on so previous deployments
+// keep working; set DIGEST_ENABLED=false in Railway to stop the emails
+// without touching RESEND_API_KEY (which also gates per-entry emails).
+const DIGEST_ENABLED = !/^(false|0|no|off)$/i.test(String(process.env.DIGEST_ENABLED ?? "true").trim());
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "fifa2026";
 const ENTRY_FIELD_MAX = 80;
@@ -850,9 +854,13 @@ app.listen(port, () => {
   console.log(`World Cup Sweep running on port ${port}`);
   if (RESEND_API_KEY) {
     console.log(`Email notifications: enabled (to=${BACKUP_EMAIL}, from=${BACKUP_FROM_EMAIL})`);
-    console.log(`Daily digest: ${DIGEST_HOUR_UTC.toString().padStart(2, "0")}:00 UTC to ${DIGEST_EMAIL}`);
-    setInterval(maybeSendDailyDigest, 5 * 60 * 1000);
-    maybeSendDailyDigest();
+    if (DIGEST_ENABLED) {
+      console.log(`Daily digest: ${DIGEST_HOUR_UTC.toString().padStart(2, "0")}:00 UTC to ${DIGEST_EMAIL}`);
+      setInterval(maybeSendDailyDigest, 5 * 60 * 1000);
+      maybeSendDailyDigest();
+    } else {
+      console.log("Daily digest: disabled (DIGEST_ENABLED=false)");
+    }
   } else {
     console.log("Email notifications: disabled (set RESEND_API_KEY env var to enable)");
   }

@@ -54,6 +54,7 @@ npm start
 | `BACKUP_FROM_EMAIL` | optional | `WC Sweep <onboarding@resend.dev>` | From address. The default works without verifying a domain, but Resend will only deliver to the email you signed up with. To send to other addresses, verify your own domain in Resend and update this to e.g. `WC Sweep <noreply@yourdomain.com>`. |
 | `DIGEST_EMAIL` | optional | _same as `BACKUP_EMAIL`_ | Recipient(s) for the daily-roster digest. Comma-separated. |
 | `DIGEST_HOUR_UTC` | optional | `21` | Hour of day (0–23, UTC) when the daily digest is sent. Default `21` = 7am AEDT / 8am AEST. Requires `RESEND_API_KEY`. |
+| `DIGEST_ENABLED` | optional | `true` | Set to `false` to disable the daily-roster digest entirely (e.g. between tournaments) without touching `RESEND_API_KEY` — per-entry emails keep working. |
 | `DATA_SEED` | optional | _empty_ | One-time JSON blob to seed initial state. Used only when no `state.json` exists. |
 
 ## Endpoints
